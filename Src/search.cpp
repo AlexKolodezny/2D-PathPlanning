@@ -1,5 +1,7 @@
 #include "search.h"
 #include <chrono>
+#include <memory>
+#include <iterator>
 
 Search::Search()
 {
@@ -8,15 +10,77 @@ Search::Search()
 
 Search::~Search() {}
 
+//give access to the nodes which we must update from the current node
+class Expansion {
+    const Map& map;
+    const EnvironmentOptions& op;
+    std::pair<int, int> goal;
+    const int dx[10]{1, 1, 1, 0, -1, -1, -1, 0, 1, 1};
+    const int dy[10]{-1, 0, 1, 1, 1, 0, -1, -1, -1, 0};
+    const double dl[10]{sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1.};
+public:
+    Expansion(const Map& m, const EnvironmentOptions& op): map(m), op(op), goal(m.getGoalNode()) {}
+
+    size_t size() const {
+        return 8;
+    }
+
+    //get returns the k-th node in which we can pass form cur
+    //if k-th node is unreachable, returns node with parent == nullptr
+    Node get(Node& cur, int k) const {
+        ++k;
+        if (!map.CellOnGrid(cur.i + dx[k], cur.j + dy[k]) || map.CellIsObstacle(cur.i + dx[k], cur.j + dy[k])) {
+            return {-1, -1, -1, -1, -1, nullptr};
+        }
+        if (k % 2 == 0) {
+            if (!op.allowdiagonal) {
+                return {-1, -1, -1, -1, -1, nullptr};
+            } else if (!op.cutcorners) {
+                if (map.CellIsObstacle(cur.i + dx[k - 1], cur.j + dy[k - 1]) || map.CellIsObstacle(cur.i + dx[k + 1], cur.j + dy[k + 1])) {
+                    return {-1, -1, -1, -1, -1, nullptr};
+                }
+            } else if (!op.allowsqueeze) {
+                if (map.CellIsObstacle(cur.i + dx[k - 1], cur.j + dy[k - 1]) && map.CellIsObstacle(cur.i + dx[k + 1], cur.j + dy[k + 1])) {
+                    return {-1, -1, -1, -1, -1, nullptr};
+                }
+            }
+        }
+        Node nxt{cur.i + dx[k], cur.j + dy[k], cur.g + dl[k], cur.g + dl[k], 0, &cur};
+        return nxt;
+    }
+};
+
+//make hppath from lppath
+std::list<Node> compressPath(const std::list<Node> path) {
+    std::list<Node> res;
+    if (path.empty()) {
+        return res;
+    }
+    res.push_back(path.front());
+    if (path.size() == 1) {
+        return res;
+    }
+    auto cur = *next(path.begin());
+    auto prev = res.back();
+    for (auto it = next(path.begin(), 2); it != path.end(); ++it) {
+        if (it->i - cur.i == cur.i - prev.i && it->j - cur.j == cur.j - prev.j) {
+            prev = cur;
+            cur = *it;
+        } else {
+            res.push_back(cur);
+            prev = cur;
+            cur = *it;
+        }
+    }
+    res.push_back(cur);
+    return res;
+}
 
 SearchResult Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
 {
-
-    int dx[4]{0, 1, 0, -1};
-    int dy[4]{1, 0, -1, 0};
-    double dl[4]{1., 1., 1., 1.};
-
     auto start_time = std::chrono::steady_clock::now();
+
+    Expansion expansion(map, options);
 
     Node* end = nullptr;
     open.push_back({map.getStartNode().first, map.getStartNode().second, 0, 0, 0, nullptr});
@@ -29,17 +93,16 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             return a.F < b.F;
         });
 
-        Node cur = *it;
+        close.push_back(*it);
         open.erase(it);
-        close.push_back(cur);
-        if (cur.i == map.getGoalNode().first && cur.j == map.getGoalNode().second) {
+        if (close.back().i == map.getGoalNode().first && close.back().j == map.getGoalNode().second) {
             end = &close.back();
             break;
         }
 
-        for (int k = 0; k < 4; ++k) {
-            Node nxt{cur.i + dx[k], cur.j + dy[k], cur.g + dl[k], cur.g + dl[k], 0, &close.back()};
-            if (!map.CellOnGrid(nxt.i, nxt.j) || map.CellIsObstacle(nxt.i, nxt.j)) {
+        for (int k = 0; k < expansion.size(); ++k) {
+            auto nxt = expansion.get(close.back(), k);
+            if (!nxt.parent) {
                 continue;
             }
 
@@ -73,7 +136,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 
     lppath.reverse();
 
-    hppath = lppath;
+    hppath = compressPath(lppath);
 
 
     sresult.nodescreated = open.size() + close.size();
