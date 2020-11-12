@@ -1,1 +1,0 @@
-/usr/bin/c++   -std=c++11 -O2 -Wall -Wextra -O3 -DNDEBUG  -rdynamic CMakeFiles/testbench.dir/testbench.cpp.o  -o testbench ../Src/libPPLIB.a 

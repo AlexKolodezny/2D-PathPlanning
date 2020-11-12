@@ -1,1 +1,0 @@
-/home/alexander/Documents/hse/year2/2D-PathPlanning/Bin/Debug/Alexander_Kolodezny_ASearch
