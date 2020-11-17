@@ -10,16 +10,70 @@ Search::Search()
 
 Search::~Search() {}
 
+class Heuristic {
+protected:
+    double w;
+public:
+    Heuristic(double w): w(w) {}
+    virtual double operator()(int, int) const = 0;
+};
+
+class ZeroHeuristic : public Heuristic {
+public:
+    ZeroHeuristic(): Heuristic(1.) {}
+    double operator()(int, int) const override {
+        return 0;
+    }
+};
+
+class EuclidianHeuristic : public Heuristic {
+    int x;
+    int y;
+public:
+    EuclidianHeuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
+    double operator()(int i, int j) const override {
+        return sqrt((i - x) * (i - x) + (j - y) * (j - y)) * w;
+    }
+};
+
+class ChebishevHeuristic : public Heuristic {
+    int x;
+    int y;
+public:
+    ChebishevHeuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
+    double operator()(int i, int j) const override {
+        return std::max(abs(i - x), abs(j - y)) * w;
+    }
+};
+
+class OctileHeuristic : public Heuristic {
+    int x, y;
+public:
+    OctileHeuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
+    double operator()(int i, int j) const override {
+        return std::min(abs(i - x), abs(j - y)) * sqrt(2.) + abs(abs(i - x) - abs(j - y)) * w;
+    }
+};
+
+class ManhattanEuristic : public Heuristic {
+    int x, y;
+public:
+    ManhattanEuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
+    double operator()(int i, int j) const override {
+        return abs(i - x) + abs(j - y) * w;
+    }
+};
+
 //give access to the nodes which we must update from the current node
 class Expansion {
     const Map& map;
     const EnvironmentOptions& op;
-    std::pair<int, int> goal;
+    const Heuristic& h;
     const int dx[10]{1, 1, 1, 0, -1, -1, -1, 0, 1, 1};
     const int dy[10]{-1, 0, 1, 1, 1, 0, -1, -1, -1, 0};
-    const double dl[10]{sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1.};
+    const double dl[10]{CN_SQRT_TWO, 1., CN_SQRT_TWO, 1., CN_SQRT_TWO, 1., CN_SQRT_TWO, 1., CN_SQRT_TWO, 1.};
 public:
-    Expansion(const Map& m, const EnvironmentOptions& op): map(m), op(op), goal(m.getGoalNode()) {}
+    Expansion(const Map& m, const EnvironmentOptions& op, const Heuristic& h): map(m), op(op), h(h) {}
 
     size_t size() const {
         return 8;
@@ -45,7 +99,10 @@ public:
                 }
             }
         }
-        Node nxt{cur.i + dx[k], cur.j + dy[k], cur.g + dl[k], cur.g + dl[k], 0, &cur};
+        Node nxt{cur.i + dx[k], cur.j + dy[k], 0, 0, 0, &cur};
+        nxt.H = h(nxt.i, nxt.j);
+        nxt.g = cur.g + dl[k];
+        nxt.F = nxt.H + nxt.g;
         return nxt;
     }
 };
@@ -80,7 +137,28 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 {
     auto start_time = std::chrono::steady_clock::now();
 
-    Expansion expansion(map, options);
+    std::unique_ptr<Heuristic> h;
+    if (options.algorithm == CN_SP_ST_DIJK) {
+        h.reset(new ZeroHeuristic());
+    } else {
+        switch (options.metrictype) {
+        case CN_SP_MT_CHEB:
+            h.reset(new ChebishevHeuristic(map.getGoalNode(), options.hweight));
+            break;
+        case CN_SP_MT_DIAG:
+            h.reset(new OctileHeuristic(map.getGoalNode(), options.hweight));
+            break;
+        case CN_SP_MT_EUCL:
+            h.reset(new EuclidianHeuristic(map.getGoalNode(), options.hweight));
+            break;
+        case CN_SP_MT_MANH:
+            h.reset(new ManhattanEuristic(map.getGoalNode(), options.hweight));
+            break;
+        default:
+            break;
+        }
+    }
+    Expansion expansion{map, options, *h};
 
     Node* end = nullptr;
     open.push_back({map.getStartNode().first, map.getStartNode().second, 0, 0, 0, nullptr});
