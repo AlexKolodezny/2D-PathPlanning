@@ -52,10 +52,13 @@ Bin/Release/Alexander_Kolodezny_ASearch Example/example.xml
   Одна из
     * diagonal - диагональная метрика  
     <img src="https://render.githubusercontent.com/render/math?math=\rho((x_1, y_1), (x_2, y_2)) = min(|x_1 - x_2|, |y_1 - y_2|) %2B ||x_2 - x_1| - |y_2 - y_1||">
+
     * manhatten - манхэтоновское расстояние  
     <img src="https://render.githubusercontent.com/render/math?math=\rho((x_1, y_1), (x_2, y_2)) = |x_2 - x_1| %2B |y_2 - y_1|">
+    
     * euclidian - евклидово расстояние  
     <img src="https://render.githubusercontent.com/render/math?math=\rho((x_1, y_1), (x_2, y_2)) = \sqrt{(x_1 - x_2)^2 %2B (y_1 - y_2)^2}">
+
     * chebyshev - расстояние Чебышева  
     <img src="https://render.githubusercontent.com/render/math?math=\rho((x_1, y_1), (x_2, y_2)) = max(|x_1 - x_2|, |y_1 - y_2|)">
   * hweight - вес эвристики
