@@ -66,6 +66,51 @@ public:
     }
 };
 
+class HashCoordinate {
+    int map_width;
+public:
+    HashCoordinate(int width): map_width(width) {}
+
+    int operator()(std::pair<int, int> coor) const {
+        return std::hash<int>()(coor.first * map_width + coor.second);
+    }
+};
+
+class OpenContainer {
+    std::multimap<int ,Node> tree;
+    std::unordered_map<std::pair<int, int>, decltype(tree)::const_iterator, HashCoordinate> table;
+public:
+    OpenContainer(HashCoordinate hash): tree(), table(10, hash) {}
+
+    bool empty() const {
+        return tree.empty();
+    }
+
+    size_t size() const {
+        return tree.size();
+    }
+
+    Node extract_min() {
+        Node res = tree.begin()->second;
+        tree.erase(tree.begin());
+        table.erase({res.i, res.j});
+        return res;
+    }
+
+    bool has_node(Node node) const {
+        return table.find({node.i, node.j}) != table.end();
+    }
+
+    void update_node(Node node) {
+        auto it = table.find({node.i, node.j});
+        if (it != table.end()) {
+            tree.erase(it->second);
+            table.erase(it);
+        }
+        table.insert({{node.i, node.j}, tree.insert({node.F, node})});
+    }
+};
+
 //give access to the nodes which we must update from the current node
 class Expansion {
     const Map& map;
@@ -139,13 +184,10 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 {
     auto start_time = std::chrono::steady_clock::now();
 
-    std::list<Node> open;
-
-    int map_width = map.getMapWidth();
-    auto hash = [map_width](std::pair<int, int> coor) -> size_t {return std::hash<int>()(coor.first * map_width + coor.second);};
-    std::unordered_map<std::pair<int, int>, Node, decltype(hash)> close{
+    OpenContainer open{HashCoordinate{map.getMapWidth()}};
+    std::unordered_map<std::pair<int, int>, Node, HashCoordinate> close{
         10, 
-        hash
+        HashCoordinate{map.getMapWidth()}
     };
 
     std::unique_ptr<Heuristic> h;
@@ -172,25 +214,23 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     Expansion expansion{map, options, *h};
 
     Node* end = nullptr;
-    open.push_back({map.getStartNode().first, map.getStartNode().second, 0, 0, 0, nullptr});
+    open.update_node({map.getStartNode().first, map.getStartNode().second, 0, 0, 0, nullptr});
 
     int countNumberOfSteps = 0;
 
     while (!open.empty()) {
         ++countNumberOfSteps;
-        auto it = std::min_element(open.begin(), open.end(), [](Node a, Node b) {
-            return a.F < b.F;
-        });
 
-        auto node = close.insert({{it->i, it->j}, *it}).first;
-        open.erase(it);
-        if (node->first == map.getGoalNode()) {
-            end = &node->second;
+        auto node = open.extract_min();
+
+        auto it = close.insert({{node.i, node.j}, node}).first;
+        if (it->first == map.getGoalNode()) {
+            end = &it->second;
             break;
         }
 
         for (int k = 0; k < expansion.size(); ++k) {
-            auto nxt = expansion.get(node->second, k);
+            auto nxt = expansion.get(it->second, k);
             if (!nxt.parent) {
                 continue;
             }
@@ -199,15 +239,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
                 continue;
             }
 
-            auto it = std::find_if(open.begin(), open.end(), [nxt](Node b) {
-                return nxt.i == b.i && nxt.j == b.j;
-            });
-
-            if (it == open.end()) {
-                open.push_back(nxt);
-            } else if (it->F > nxt.F) {
-                *it = nxt;
-            }
+            open.update_node(nxt);
         }
     }
 
@@ -226,6 +258,10 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     sresult.time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0;
 
     hppath = compressPath(lppath);
+
+    // for (auto node : lppath) {
+    //     std::cout << node.i << ' ' << node.j << std::endl;
+    // }
 
     sresult.nodescreated = open.size() + close.size();
     sresult.numberofsteps = countNumberOfSteps;
