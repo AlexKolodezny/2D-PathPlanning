@@ -103,7 +103,10 @@ public:
 
     void update_node(Node node) {
         auto it = table.find({node.i, node.j});
-        if (it != table.end()) {
+        if (it != table.end()) {                
+            if (it->second->second.F < node.F) {
+                return;
+            }
             tree.erase(it->second);
             table.erase(it);
         }
@@ -214,7 +217,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     Expansion expansion{map, options, *h};
 
     Node* end = nullptr;
-    open.update_node({map.getStartNode().first, map.getStartNode().second, 0, 0, 0, nullptr});
+    open.update_node({map.getStartNode().first, map.getStartNode().second, h->operator()(map.getStartNode().first, map.getStartNode().second), 0, h->operator()(map.getStartNode().first, map.getStartNode().second), nullptr});
 
     int countNumberOfSteps = 0;
 
