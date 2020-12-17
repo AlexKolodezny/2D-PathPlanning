@@ -2,6 +2,8 @@
 #include <chrono>
 #include <memory>
 #include <iterator>
+#include <map>
+#include <unordered_map>
 
 Search::Search()
 {
@@ -137,6 +139,15 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 {
     auto start_time = std::chrono::steady_clock::now();
 
+    std::list<Node> open;
+
+    int map_width = map.getMapWidth();
+    auto hash = [map_width](std::pair<int, int> coor) -> size_t {return std::hash<int>()(coor.first * map_width + coor.second);};
+    std::unordered_map<std::pair<int, int>, Node, decltype(hash)> close{
+        10, 
+        hash
+    };
+
     std::unique_ptr<Heuristic> h;
     if (options.algorithm == CN_SP_ST_DIJK) {
         h.reset(new ZeroHeuristic());
@@ -171,22 +182,20 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             return a.F < b.F;
         });
 
-        close.push_back(*it);
+        auto node = close.insert({{it->i, it->j}, *it}).first;
         open.erase(it);
-        if (close.back().i == map.getGoalNode().first && close.back().j == map.getGoalNode().second) {
-            end = &close.back();
+        if (node->first == map.getGoalNode()) {
+            end = &node->second;
             break;
         }
 
         for (int k = 0; k < expansion.size(); ++k) {
-            auto nxt = expansion.get(close.back(), k);
+            auto nxt = expansion.get(node->second, k);
             if (!nxt.parent) {
                 continue;
             }
 
-            if (std::find_if(close.begin(), close.end(), [nxt](Node b){
-                return nxt.i == b.i && nxt.j == b.j;
-            }) != close.end()) {
+            if (close.find({nxt.i, nxt.j}) != close.end()) {
                 continue;
             }
 
@@ -214,12 +223,12 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 
     lppath.reverse();
 
-    hppath = compressPath(lppath);
+    sresult.time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0;
 
+    hppath = compressPath(lppath);
 
     sresult.nodescreated = open.size() + close.size();
     sresult.numberofsteps = countNumberOfSteps;
-    sresult.time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count();
     sresult.hppath = &hppath;
     sresult.lppath = &lppath;
 

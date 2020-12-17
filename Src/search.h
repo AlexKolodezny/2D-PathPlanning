@@ -32,10 +32,6 @@ class Search
         //Start with very simple (and ineffective) structures like list or vector and make it work first
         //and only then begin enhancement!
 
-        std::list<Node> open;
-        std::list<Node> close;
-
-
         SearchResult                    sresult; //This will store the search result
         std::list<Node>                 lppath, hppath; //
 
