@@ -124,7 +124,7 @@ class Expansion {
     const Heuristic& h;
     const int dx[10]{1, 1, 1, 0, -1, -1, -1, 0, 1, 1};
     const int dy[10]{-1, 0, 1, 1, 1, 0, -1, -1, -1, 0};
-    const double dl[10]{CN_SQRT_TWO, 1., CN_SQRT_TWO, 1., CN_SQRT_TWO, 1., CN_SQRT_TWO, 1., CN_SQRT_TWO, 1.};
+    const double dl[10]{sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1.};
 public:
     Expansion(const Map& m, const EnvironmentOptions& op, const Heuristic& h): map(m), op(op), h(h) {}
 
