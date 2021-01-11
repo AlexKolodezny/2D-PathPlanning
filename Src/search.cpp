@@ -17,13 +17,16 @@ protected:
     double w;
 public:
     Heuristic(double w): w(w) {}
-    virtual double operator()(int, int) const = 0;
+    virtual double metric(int, int) const = 0;
+    double operator()(int i, int j) const {
+        return metric(i, j) * w;
+    }
 };
 
 class ZeroHeuristic : public Heuristic {
 public:
     ZeroHeuristic(): Heuristic(1.) {}
-    double operator()(int, int) const override {
+    double metric(int, int) const override {
         return 0;
     }
 };
@@ -33,8 +36,8 @@ class EuclidianHeuristic : public Heuristic {
     int y;
 public:
     EuclidianHeuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
-    double operator()(int i, int j) const override {
-        return sqrt((i - x) * (i - x) + (j - y) * (j - y)) * w;
+    double metric(int i, int j) const override {
+        return sqrt((i - x) * (i - x) + (j - y) * (j - y));
     }
 };
 
@@ -43,8 +46,8 @@ class ChebishevHeuristic : public Heuristic {
     int y;
 public:
     ChebishevHeuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
-    double operator()(int i, int j) const override {
-        return std::max(abs(i - x), abs(j - y)) * w;
+    double metric(int i, int j) const override {
+        return std::max(abs(i - x), abs(j - y));
     }
 };
 
@@ -52,8 +55,8 @@ class OctileHeuristic : public Heuristic {
     int x, y;
 public:
     OctileHeuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
-    double operator()(int i, int j) const override {
-        return std::min(abs(i - x), abs(j - y)) * sqrt(2.) + abs(abs(i - x) - abs(j - y)) * w;
+    double metric(int i, int j) const override {
+        return (std::min(abs(i - x), abs(j - y)) * sqrt(2.) + abs(abs(i - x) - abs(j - y)));
     }
 };
 
@@ -61,8 +64,8 @@ class ManhattanEuristic : public Heuristic {
     int x, y;
 public:
     ManhattanEuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
-    double operator()(int i, int j) const override {
-        return abs(i - x) + abs(j - y) * w;
+    double metric(int i, int j) const override {
+        return (abs(i - x) + abs(j - y));
     }
 };
 
