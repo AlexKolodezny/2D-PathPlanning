@@ -80,7 +80,7 @@ public:
 };
 
 class OpenContainer {
-    std::multimap<int ,Node> tree;
+    std::multimap<double ,Node> tree;
     std::unordered_map<std::pair<int, int>, decltype(tree)::const_iterator, HashCoordinate> table;
 public:
     OpenContainer(HashCoordinate hash): tree(), table(10, hash) {}
@@ -107,7 +107,7 @@ public:
     void update_node(Node node) {
         auto it = table.find({node.i, node.j});
         if (it != table.end()) {                
-            if (it->second->second.F < node.F) {
+            if (it->second->second.F <= node.F) {
                 return;
             }
             tree.erase(it->second);
@@ -190,7 +190,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 {
     auto start_time = std::chrono::steady_clock::now();
 
-    OpenContainer open{HashCoordinate{map.getMapWidth()}};
+    OpenContainer open{HashCoordinate{map.getMapHeight()}};
     std::unordered_map<std::pair<int, int>, Node, HashCoordinate> close{
         10, 
         HashCoordinate{map.getMapWidth()}
