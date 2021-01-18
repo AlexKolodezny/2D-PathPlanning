@@ -193,7 +193,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     OpenContainer open{HashCoordinate{map.getMapHeight()}};
     std::unordered_map<std::pair<int, int>, Node, HashCoordinate> close{
         10, 
-        HashCoordinate{map.getMapWidth()}
+        HashCoordinate{map.getMapHeight()}
     };
 
     std::unique_ptr<Heuristic> h;
