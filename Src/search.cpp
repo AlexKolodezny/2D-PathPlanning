@@ -79,8 +79,18 @@ public:
     }
 };
 
+class OpenContainerTreeCompare {
+public:
+    bool operator()(std::pair<double, double> x, std::pair<double, double> y) {
+        if (x.first == y.first) {
+            return x.second > y.second;
+        }
+        return x.first < y.first;
+    }
+};
+
 class OpenContainer {
-    std::multimap<double ,Node> tree;
+    std::multimap<std::pair<double, double>, Node, OpenContainerTreeCompare> tree;
     std::unordered_map<std::pair<int, int>, decltype(tree)::const_iterator, HashCoordinate> table;
 public:
     OpenContainer(HashCoordinate hash): tree(), table(10, hash) {}
@@ -113,7 +123,7 @@ public:
             tree.erase(it->second);
             table.erase(it);
         }
-        table.insert({{node.i, node.j}, tree.insert({node.F, node})});
+        table.insert({{node.i, node.j}, tree.insert({{node.F, node.g}, node})});
     }
 };
 
