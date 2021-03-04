@@ -25,16 +25,19 @@ class Map
         int     goal_i, goal_j;
         double  cellSize;
         int**   Grid;
+        int**   distance_map;
 
     public:
         Map();
         Map(const Map& orig);
         ~Map();
 
-        bool getMap(const char *FileName);
+        bool setMap(const char *FileName);
+        bool setDistanceMap(int max);
         bool CellIsTraversable (int i, int j) const;
         bool CellOnGrid (int i, int j) const;
         bool CellIsObstacle(int i, int j) const;
+        int getCellDanger(int i, int j) const;
         int  getValue(int i, int j) const;
         int getMapHeight() const;
         int getMapWidth() const;

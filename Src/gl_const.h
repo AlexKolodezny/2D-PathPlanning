@@ -22,6 +22,7 @@
         #define CNS_TAG_ST          "searchtype"
         #define CNS_TAG_HW          "hweight"
         #define CNS_TAG_MT          "metrictype"
+        #define CNS_TAG_DL          "dangerlevel"
         #define CNS_TAG_BT          "breakingties"
         #define CNS_TAG_AS          "allowsqueeze"
         #define CNS_TAG_AD          "allowdiagonal"
@@ -70,6 +71,7 @@
         #define CNS_SP_ST_BFS           "bfs"
         #define CNS_SP_ST_DIJK          "dijkstra"
         #define CNS_SP_ST_ASTAR         "astar"
+        #define CNS_SP_ST_BOASTAR       "boastar"
         #define CNS_SP_ST_JP_SEARCH     "jp_search"
         #define CNS_SP_ST_TH            "theta"
 

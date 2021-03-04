@@ -1,4 +1,5 @@
 #include "map.h"
+#include <queue>
 
 
 Map::Map()
@@ -10,6 +11,7 @@ Map::Map()
     goal_i = -1;
     goal_j = -1;
     Grid = nullptr;
+    distance_map = nullptr;
     cellSize = 1;
 }
 
@@ -19,6 +21,12 @@ Map::~Map()
         for (int i = 0; i < height; ++i)
             delete[] Grid[i];
         delete[] Grid;
+    }
+    if (distance_map) {
+        for (int i = 0; i < height; ++i) {
+            delete[] distance_map[i];
+        }
+        delete[] distance_map;
     }
 }
 
@@ -37,7 +45,7 @@ bool Map::CellOnGrid(int i, int j) const
     return (i < height && i >= 0 && j < width && j >= 0);
 }
 
-bool Map::getMap(const char *FileName)
+bool Map::setMap(const char *FileName)
 {
     int rowiter = 0, grid_i = 0, grid_j = 0;
 
@@ -309,6 +317,64 @@ bool Map::getMap(const char *FileName)
     }
 
     return true;
+}
+
+bool Map::setDistanceMap(int max) {
+    if (!Grid) {
+        std::cerr << "Error! There is not grid yet\n";
+        return false;
+    }
+    if (max < 0) {
+        std::cerr << "Error! Max dangerous must be greater or equal than zero\n";
+        return false;
+    }
+    distance_map = new int*[height];
+    for (int i = 0; i < height; ++i) {
+        distance_map[i] = new int[width];
+        std::fill_n(distance_map[i], width, -1);
+    }
+
+    std::queue<std::pair<int, int>> q;
+
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            if (Grid[i][j]) {
+                distance_map[i][j] = max + 1;
+                q.push({i, j});
+            }
+        }
+    }
+
+    int dx[4] = {0, 1, 0, -1};
+    int dy[4] = {1, 0, -1, 0};
+
+    while (!q.empty()) {
+        auto v = q.front();
+        q.pop();
+        for (int k = 0; k < 4; ++k) {
+            std::pair<int, int> u{v.first + dx[k], v.second + dy[k]};
+            if (!CellOnGrid(u.first, u.second)) {
+                continue;
+            }
+            if (distance_map[u.first][u.second] == -1) {
+                distance_map[u.first][u.second] = std::max(distance_map[v.first][v.second] - 1, 0);
+                q.push(u);
+            }
+        }
+    }
+    return true;
+}
+
+int Map::getCellDanger(int i, int j) const {
+    if (i < 0 || i >= height) {
+        return -1;
+    }
+    
+    if (j < 0 || j >= width) {
+        return -1;
+    }
+
+    return distance_map[i][j];
 }
 
 

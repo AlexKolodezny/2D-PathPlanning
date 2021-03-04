@@ -8,9 +8,10 @@ EnvironmentOptions::EnvironmentOptions()
     allowsqueeze = false;
     allowdiagonal = true;
     cutcorners = false;
+    dangerlevel = 0;
 }
 
-EnvironmentOptions::EnvironmentOptions(bool AS, bool AD, bool CC, int MT, int AL, double HW)
+EnvironmentOptions::EnvironmentOptions(bool AS, bool AD, bool CC, int MT, int AL, double HW, int DL)
 {
     algorithm = AL;
     hweight = HW;
@@ -18,5 +19,6 @@ EnvironmentOptions::EnvironmentOptions(bool AS, bool AD, bool CC, int MT, int AL
     allowsqueeze = AS;
     allowdiagonal = AD;
     cutcorners = CC;
+    dangerlevel = DL;
 }
 

@@ -169,7 +169,7 @@ void XmlLogger::writeToLogHPpath(const std::list<Node> &hppath)
         ++iter;
         part->SetAttribute(CNS_TAG_ATTR_FINX, iter->j);
         part->SetAttribute(CNS_TAG_ATTR_FINY, iter->i);
-        part->SetAttribute(CNS_TAG_ATTR_LENGTH, iter->g - it->g);
+        part->SetAttribute(CNS_TAG_ATTR_LENGTH, iter->g1 - it->g1);
         hplevel->LinkEndChild(part);
         ++it;
         ++partnumber;

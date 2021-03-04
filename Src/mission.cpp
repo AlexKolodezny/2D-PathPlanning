@@ -21,7 +21,7 @@ Mission::~Mission()
 
 bool Mission::getMap()
 {
-    return map.getMap(fileName);
+    return map.setMap(fileName);
 }
 
 bool Mission::getConfig()
