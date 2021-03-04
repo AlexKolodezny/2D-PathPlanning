@@ -40,7 +40,11 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    mission.createEnvironmentOptions();
+    if (!mission.createEnvironmentOptions()) {
+        std::cerr <<"Incorrect options! Program halted" << std::endl;
+        return -1;
+    }
+
     mission.createSearch();
     mission.startSearch();
     SearchResult result = mission.getSearchResult();

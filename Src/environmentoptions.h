@@ -13,6 +13,8 @@ public:
     bool    cutcorners;     //Option that allows to make diagonal moves, when one adjacent cell is untraversable
     int     algorithm;
     double  hweight;
+
+    bool setEnvironmentOptions(const char* FileName);
 };
 
 #endif // ENVIRONMENTOPTIONS_H

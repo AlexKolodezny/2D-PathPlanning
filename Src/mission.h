@@ -27,7 +27,7 @@ class Mission
         bool getConfig();
         bool createLog();
         void createSearch();
-        void createEnvironmentOptions();
+        bool createEnvironmentOptions();
         void startSearch();
         void printSearchResultsToConsole();
         void saveSearchResultsToLog();

@@ -39,7 +39,7 @@ bool Map::CellOnGrid(int i, int j) const
 
 bool Map::getMap(const char *FileName)
 {
-    int rowiter = 0, grid_i = 0, grid_j = 0;
+    int grid_i = 0, grid_j = 0;
 
     tinyxml2::XMLElement *root = 0, *map = 0, *element = 0, *mapnode;
 
@@ -264,7 +264,7 @@ bool Map::getMap(const char *FileName)
                 std::string item;
                 while (std::getline(ss, item, ' '))
                     elems.push_back(item);
-                rowiter = grid_j = 0;
+                grid_j = 0;
                 int val;
                 if (elems.size() > 0)
                     for (grid_j = 0; grid_j < width; ++grid_j) {
@@ -310,8 +310,6 @@ bool Map::getMap(const char *FileName)
 
     return true;
 }
-
-
 
 int Map::getValue(int i, int j) const
 {
