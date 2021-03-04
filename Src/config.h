@@ -6,12 +6,14 @@ class Config
 {
     public:
         Config();
-        Config(const Config& orig);
+        Config(const Config& orig) = delete;
+        Config(Config&&) = delete;
+        Config& operator=(const Config&) = delete;
+        Config& operator=(Config&&) = delete;
         ~Config();
         bool getConfig(const char *FileName);
 
     public:
-        double*         SearchParams;
         std::string*    LogParams;
         unsigned int    N;
 

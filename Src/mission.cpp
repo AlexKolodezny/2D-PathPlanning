@@ -36,17 +36,9 @@ bool Mission::createLog()
     return logger->getLog(fileName, config.LogParams);
 }
 
-void Mission::createEnvironmentOptions()
+bool Mission::createEnvironmentOptions()
 {
-    options.algorithm = config.SearchParams[CN_SP_ST];
-    options.cutcorners = config.SearchParams[CN_SP_CC];
-    options.allowsqueeze = config.SearchParams[CN_SP_AS];
-    options.allowdiagonal = config.SearchParams[CN_SP_AD];
-    options.metrictype = config.SearchParams[CN_SP_MT];
-    if (options.algorithm == CN_SP_ST_ASTAR) {
-        options.hweight = config.SearchParams[CN_SP_HW];
-    }
-
+    return options.setEnvironmentOptions(fileName);
 }
 
 void Mission::createSearch()
