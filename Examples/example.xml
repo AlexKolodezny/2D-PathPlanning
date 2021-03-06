@@ -37,16 +37,16 @@
         </grid>
     </map>
     <algorithm>
-        <searchtype>astar</searchtype>
+        <searchtype>boastar</searchtype>
         <metrictype>diagonal</metrictype>
-        <breakingties>g-max</breakingties>
         <hweight>1</hweight>
+        <dangerlevel>3</dangerlevel>
         <allowdiagonal>true</allowdiagonal>
         <cutcorners>true</cutcorners>
         <allowsqueeze>true</allowsqueeze>
     </algorithm>
     <options>
-        <loglevel>1</loglevel>
+        <loglevel>0.5</loglevel>
         <logpath />
         <logfilename />
     </options>

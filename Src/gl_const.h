@@ -34,11 +34,15 @@
 
     #define CNS_TAG_LOG             "log"
         #define CNS_TAG_MAPFN       "mapfilename"
+        #define CNS_TAG_PATHS_FOUND "pathsfound"
         #define CNS_TAG_SUM         "summary"
-        #define CNS_TAG_PATH        "path"
-        #define CNS_TAG_LPLEVEL     "lplevel"
-        #define CNS_TAG_HPLEVEL     "hplevel"
-            #define CNS_TAG_SECTION "section"
+        #define CNS_TAG_PATHS               "paths"
+            #define CNS_TAG_ITEM            "item"
+                #define CNS_TAG_PATH_SUM    "pathsummary"
+                #define CNS_TAG_PATH        "path"
+                #define CNS_TAG_LPLEVEL     "lplevel"
+                #define CNS_TAG_HPLEVEL     "hplevel"
+                    #define CNS_TAG_SECTION "section"
         #define CNS_TAG_LOWLEVEL    "lowlevel"
             #define CNS_TAG_STEP    "step"
             #define CNS_TAG_OPEN    "open"
@@ -49,6 +53,7 @@
     #define CNS_TAG_ATTR_NUMOFSTEPS     "numberofsteps"
     #define CNS_TAG_ATTR_NODESCREATED   "nodescreated"
     #define CNS_TAG_ATTR_LENGTH         "length"
+    #define CNS_TAG_ATTR_DANGER         "danger"
     #define CNS_TAG_ATTR_LENGTH_SCALED  "length_scaled"
     #define CNS_TAG_ATTR_TIME           "time"
     #define CNS_TAG_ATTR_X              "x"
@@ -73,6 +78,7 @@
 
         #define CN_SP_ST_DIJK           1
         #define CN_SP_ST_ASTAR          2
+        #define CN_SP_ST_BOASTAR        3
 
     #define CN_SP_AD 1 //AllowDiagonal
 

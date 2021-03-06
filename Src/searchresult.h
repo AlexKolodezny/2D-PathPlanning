@@ -24,7 +24,7 @@
 struct SearchResult
 {
         bool pathfound;
-        float pathlength; //if path not found, then pathlength=0
+        std::vector<double> pathlength; //if path not found, then pathlength=0
         std::vector<std::list<Node>> lppaths;
         // const std::list<Node>* lppath; //path as the sequence of adjacent nodes (see above)
                                        //This is a pointer to the list of nodes that is actually created and hadled by Search class,
@@ -39,7 +39,7 @@ struct SearchResult
         SearchResult()
         {
             pathfound = false;
-            pathlength = 0;
+            pathlength = {};
             lppaths = {};
             hppaths = {};
             nodescreated = 0;

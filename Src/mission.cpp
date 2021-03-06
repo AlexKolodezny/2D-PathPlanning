@@ -43,7 +43,7 @@ bool Mission::createEnvironmentOptions()
 
 void Mission::createSearch()
 {
-//might be helpful in case numerous algorithms are added
+    map.setDistanceMap(options.dangerlevel);
 }
 
 void Mission::startSearch()
@@ -60,19 +60,17 @@ void Mission::printSearchResultsToConsole()
     std::cout << "numberofsteps=" << sr.numberofsteps << std::endl;
     std::cout << "nodescreated=" << sr.nodescreated << std::endl;
     if (sr.pathfound) {
-        std::cout << "pathlength=" << sr.pathlength << std::endl;
-        std::cout << "pathlength_scaled=" << sr.pathlength * map.getCellSize() << std::endl;
+        std::cout << "pathlength=" << sr.pathlength[0] << std::endl;
+        std::cout << "pathlength_scaled=" << sr.pathlength[0] * map.getCellSize() << std::endl;
     }
     std::cout << "time=" << sr.time << std::endl;
 }
 
 void Mission::saveSearchResultsToLog()
 {
-    logger->writeToLogSummary(sr.numberofsteps, sr.nodescreated, sr.pathlength, sr.time, map.getCellSize());
+    logger->writeToLogSummary(sr.numberofsteps, sr.nodescreated, sr.time);
     if (sr.pathfound) {
-        logger->writeToLogPath(*sr.lppath);
-        logger->writeToLogHPpath(*sr.hppath);
-        logger->writeToLogMap(map, *sr.lppath);
+        logger->writeToLogPaths(map, sr.lppaths, sr.hppaths);
     } else
         logger->writeToLogNotFound();
     logger->saveLog();

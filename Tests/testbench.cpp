@@ -49,10 +49,14 @@ int main(int argc, char* argv[])
     mission.startSearch();
     SearchResult result = mission.getSearchResult();
 
+    float pathlength = result.pathlength[0];
+
     
-    if(abs(len - result.pathlength) > EPS)
+    if(abs(len - pathlength) > EPS)
     {
-        std::cerr<<"Incorrect path legth"<<std::endl;
+        std::cerr<<"Incorrect path length"<<std::endl;
+        std::cerr << "Output: " << result.pathlength[0] << std::endl;
+        std::cerr << "Correct: " << len << std::endl;
         return 1;
     }
 

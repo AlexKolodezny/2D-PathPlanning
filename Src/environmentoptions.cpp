@@ -63,25 +63,47 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
     if (value == CNS_SP_ST_DIJK) {
         this->algorithm = CN_SP_ST_DIJK;
     }
-    else if (value == CNS_SP_ST_ASTAR) {
-        this->algorithm = CN_SP_ST_ASTAR;
-        element = algorithm->FirstChildElement(CNS_TAG_HW);
-        if (!element) {
-            std::cout << "Warning! No '" << CNS_TAG_HW << "' tag found in algorithm section." << std::endl;
-            std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
-            hweight = 1;
-        }
-        else {
-            stream << element->GetText();
-            stream >> hweight;
-            stream.str("");
-            stream.clear();
-
-            if (hweight < 1) {
-                std::cout << "Warning! Value of '" << CNS_TAG_HW << "' tag is not correctly specified. Should be >= 1."
-                          << std::endl;
+    else if (value == CNS_SP_ST_ASTAR || value == CNS_SP_ST_BOASTAR) {
+        if (value == CNS_SP_ST_ASTAR) {
+            this->algorithm = CN_SP_ST_ASTAR;
+            element = algorithm->FirstChildElement(CNS_TAG_HW);
+            if (!element) {
+                std::cout << "Warning! No '" << CNS_TAG_HW << "' tag found in algorithm section." << std::endl;
                 std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
                 hweight = 1;
+            }
+            else {
+                stream << element->GetText();
+                stream >> hweight;
+                stream.str("");
+                stream.clear();
+
+                if (hweight < 1) {
+                    std::cout << "Warning! Value of '" << CNS_TAG_HW << "' tag is not correctly specified. Should be >= 1."
+                            << std::endl;
+                    std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
+                    hweight = 1;
+                }
+            }
+        } else {
+            this->algorithm = CN_SP_ST_BOASTAR;
+            element = algorithm->FirstChildElement(CNS_TAG_DL);
+            if (!element) {
+                std::cout << "Warning! No '" << CNS_TAG_DL << "' tag found in algorithm section." << std::endl;
+                std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 0" << std::endl;
+                dangerlevel = 0;
+            } else {
+                stream << element->GetText();
+                stream >> dangerlevel;
+                stream.str("");
+                stream.clear();
+
+                if (dangerlevel < 0) {
+                    std::cout << "Warning! Value of '" << CNS_TAG_DL << "' tag is not correctly specified. Should be >= 1."
+                            << std::endl;
+                    std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 1." << std::endl;
+                    dangerlevel = 0;
+                }
             }
         }
 
@@ -100,7 +122,7 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
             else if (value == CNS_SP_MT_DIAG) metrictype = CN_SP_MT_DIAG;
             else if (value == CNS_SP_MT_CHEB) metrictype = CN_SP_MT_CHEB;
             else {
-                std::cout << "Warning! Value of'" << CNS_TAG_MT << "' is not correctly specified." << std::endl;
+                std::cout << "Warning! Value of'" << CNS_TAG_MT << "' is not correctly specified. There is not tag '" << value << "'." << std::endl;
                 std::cout << "Value of '" << CNS_TAG_MT << "' was defined to 'euclidean'" << std::endl;
                 metrictype = CN_SP_MT_EUCL;
             }

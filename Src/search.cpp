@@ -83,17 +83,16 @@ class OpenContainerTreeCompare {
 public:
     bool operator()(std::pair<double, double> x, std::pair<double, double> y) {
         if (x.first == y.first) {
-            return x.second > y.second;
+            return x.second < y.second;
         }
         return x.first < y.first;
     }
 };
 
 class OpenContainer {
-    std::multimap<std::pair<double, double>, Node, OpenContainerTreeCompare> tree;
-    std::unordered_map<std::pair<int, int>, decltype(tree)::const_iterator, HashCoordinate> table;
+    std::multimap<std::pair<double, double>, Node> tree;
 public:
-    OpenContainer(HashCoordinate hash): tree(), table(10, hash) {}
+    OpenContainer(): tree() {}
 
     bool empty() const {
         return tree.empty();
@@ -106,24 +105,61 @@ public:
     Node extract_min() {
         Node res = tree.begin()->second;
         tree.erase(tree.begin());
-        table.erase({res.i, res.j});
         return res;
     }
 
-    bool has_node(Node node) const {
-        return table.find({node.i, node.j}) != table.end();
+    void insert_node(Node node) {
+        tree.insert({{node.f1, node.f2}, node});
+        return;
+    }
+};
+
+class CloseContainer {
+    std::list<Node> container;
+    std::unordered_map<std::pair<int, int>, double, HashCoordinate> g_min;
+public:
+    CloseContainer(HashCoordinate hash): container{}, g_min{10, hash} {}
+
+    size_t size() const {
+        return container.size();
     }
 
-    void update_node(Node node) {
-        auto it = table.find({node.i, node.j});
-        if (it != table.end()) {                
-            if (it->second->second.F <= node.F) {
-                return;
-            }
-            tree.erase(it->second);
-            table.erase(it);
+    bool empty() const {
+        return container.empty();
+    }
+
+    bool is_non_dominated(Node node) const {
+        if (g_min.find({node.i, node.j}) == g_min.end()) {
+            return true;
         }
-        table.insert({{node.i, node.j}, tree.insert({{node.F, node.g}, node})});
+        return node.g2 < g_min.at({node.i, node.j});
+    }
+
+    Node* insert(Node node) {
+        container.push_back(node);
+        g_min[{node.i, node.j}] = node.g2;
+        return &container.back();
+    }
+};
+
+class Solves {
+    std::vector<Node*> container;
+    double g_min;
+public:
+    Solves(): container{}, g_min{} {}
+
+    bool is_non_dominated(Node node) const {
+        return container.empty() || node.f2 < g_min;
+    }
+
+    void insert_node(Node *node) {
+        g_min = node->g2;
+        container.push_back(node);
+        return;
+    }
+
+    const std::vector<Node*>& path_ends() {
+        return container;
     }
 };
 
@@ -147,31 +183,34 @@ public:
     Node get(Node& cur, int k) const {
         ++k;
         if (!map.CellOnGrid(cur.i + dx[k], cur.j + dy[k]) || map.CellIsObstacle(cur.i + dx[k], cur.j + dy[k])) {
-            return {-1, -1, -1, -1, -1, nullptr};
+            return {};
         }
         if (k % 2 == 0) {
             if (!op.allowdiagonal) {
-                return {-1, -1, -1, -1, -1, nullptr};
+                return {};
             } else if (!op.cutcorners) {
                 if (map.CellIsObstacle(cur.i + dx[k - 1], cur.j + dy[k - 1]) || map.CellIsObstacle(cur.i + dx[k + 1], cur.j + dy[k + 1])) {
-                    return {-1, -1, -1, -1, -1, nullptr};
+                    return {};
                 }
             } else if (!op.allowsqueeze) {
                 if (map.CellIsObstacle(cur.i + dx[k - 1], cur.j + dy[k - 1]) && map.CellIsObstacle(cur.i + dx[k + 1], cur.j + dy[k + 1])) {
-                    return {-1, -1, -1, -1, -1, nullptr};
+                    return {};
                 }
             }
         }
-        Node nxt{cur.i + dx[k], cur.j + dy[k], 0, 0, 0, &cur};
-        nxt.H = h(nxt.i, nxt.j);
-        nxt.g = cur.g + dl[k];
-        nxt.F = nxt.H + nxt.g;
+        Node nxt{
+            cur.i + dx[k], 
+            cur.j + dy[k], 
+            h(cur.i + dx[k], cur.j + dy[k]), 
+            cur.g1 + dl[k], 
+            cur.g2 + map.getCellDanger(cur.i + dx[k], cur.j + dy[k]),
+            &cur};
         return nxt;
     }
 };
 
 //make hppath from lppath
-std::list<Node> compressPath(const std::list<Node> path) {
+std::list<Node> make_secondary_path(const std::list<Node>& path) {
     std::list<Node> res;
     if (path.empty()) {
         return res;
@@ -196,15 +235,26 @@ std::list<Node> compressPath(const std::list<Node> path) {
     return res;
 }
 
+std::list<Node> make_primary_path(Node *end) {
+    std::list<Node> path;
+    while (end != nullptr) {
+        path.push_front(*end);
+        end = end->parent;
+    }
+    path.front().parent = nullptr;
+    for (auto it = std::next(path.begin()); it != path.end(); ++it) {
+        it->parent = &*std::prev(it);
+    }
+    return path;
+}
+
 SearchResult Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
 {
     auto start_time = std::chrono::steady_clock::now();
 
-    OpenContainer open{HashCoordinate{map.getMapHeight()}};
-    std::unordered_map<std::pair<int, int>, Node, HashCoordinate> close{
-        10, 
-        HashCoordinate{map.getMapHeight()}
-    };
+    OpenContainer open{};
+    CloseContainer close{HashCoordinate{map.getMapHeight()}};
+    Solves solves{};
 
     std::unique_ptr<Heuristic> h;
     if (options.algorithm == CN_SP_ST_DIJK) {
@@ -229,8 +279,20 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     }
     Expansion expansion{map, options, *h};
 
-    Node* end = nullptr;
-    open.update_node({map.getStartNode().first, map.getStartNode().second, h->operator()(map.getStartNode().first, map.getStartNode().second), 0, h->operator()(map.getStartNode().first, map.getStartNode().second), nullptr});
+    // for (size_t i = 0; i < map.getMapHeight(); ++i) {
+    //     for (size_t j = 0; j < map.getMapWidth(); ++j) {
+    //         std::cout << map.getCellDanger(i, j) << ' ';
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    open.insert_node({
+        map.getStartNode().first, 
+        map.getStartNode().second, 
+        h->operator()(map.getStartNode().first, map.getStartNode().second), 
+        0,
+        0,
+        nullptr});
 
     int countNumberOfSteps = 0;
 
@@ -239,68 +301,45 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 
         auto node = open.extract_min();
 
-        auto it = close.insert({{node.i, node.j}, node}).first;
-        if (it->first == map.getGoalNode()) {
-            end = &it->second;
-            break;
+        if (!close.is_non_dominated(node) || !solves.is_non_dominated(node)) {
+            continue;
+        }
+
+        auto ptr = close.insert(node);
+        if (ptr->i == map.getGoalNode().first && ptr->j == map.getGoalNode().second) {
+            solves.insert_node(ptr);
         }
 
         for (int k = 0; k < expansion.size(); ++k) {
-            auto nxt = expansion.get(it->second, k);
+            auto nxt = expansion.get(*ptr, k);
             if (!nxt.parent) {
                 continue;
             }
-
-            if (close.find({nxt.i, nxt.j}) != close.end()) {
+            if (!close.is_non_dominated(nxt) || !solves.is_non_dominated(nxt)) {
                 continue;
             }
-
-            open.update_node(nxt);
+            open.insert_node(nxt);
         }
     }
 
-    sresult.pathfound = end != nullptr;
-    if (sresult.pathfound) {
-        sresult.pathlength = end->g;
-    }
+    std::cout << "The number of paths: " << solves.path_ends().size() <<  std::endl;
 
-    while (end != nullptr) {
-        lppath.push_back(*end);
-        end = end->parent;
+    for (auto end : solves.path_ends()) {
+        sresult.lppaths.push_back(make_primary_path(end));
     }
-
-    lppath.reverse();
 
     sresult.time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0;
 
-    hppath = compressPath(lppath);
+    for (auto path : sresult.lppaths) {
+        sresult.hppaths.push_back(make_secondary_path(path));
+        sresult.pathlength.push_back(path.back().g1);
+    }
 
-    // for (auto node : lppath) {
-    //     std::cout << node.i << ' ' << node.j << std::endl;
-    // }
+    sresult.pathfound = !sresult.lppaths.empty();
 
     sresult.nodescreated = open.size() + close.size();
     sresult.numberofsteps = countNumberOfSteps;
-    sresult.hppath = &hppath;
-    sresult.lppath = &lppath;
-
-    //need to implement
-
-    /*sresult.pathfound = ;
-    sresult.nodescreated =  ;
-    sresult.numberofsteps = ;
-    sresult.time = ;
-    sresult.hppath = &hppath; //Here is a constant pointer
-    sresult.lppath = &lppath;*/
     return sresult;
 }
 
-/*void Search::makePrimaryPath(Node curNode)
-{
-    //need to implement
-}*/
 
-/*void Search::makeSecondaryPath()
-{
-    //need to implement
-}*/
