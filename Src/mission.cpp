@@ -60,8 +60,7 @@ void Mission::printSearchResultsToConsole()
     std::cout << "numberofsteps=" << sr.numberofsteps << std::endl;
     std::cout << "nodescreated=" << sr.nodescreated << std::endl;
     if (sr.pathfound) {
-        std::cout << "pathlength=" << sr.pathlength[0] << std::endl;
-        std::cout << "pathlength_scaled=" << sr.pathlength[0] * map.getCellSize() << std::endl;
+        std::cout << "numberofpaths=" << sr.pathlength.size() << std::endl;
     }
     std::cout << "time=" << sr.time << std::endl;
 }

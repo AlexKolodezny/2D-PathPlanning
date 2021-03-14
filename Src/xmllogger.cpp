@@ -87,7 +87,9 @@ void XmlLogger::saveLog()
 
 void XmlLogger::writeToLogMap(XMLElement *node, const Map &map, const std::list<Node> &path)
 {
-    if (loglevel == CN_LP_LEVEL_NOPE_WORD || loglevel == CN_LP_LEVEL_TINY_WORD)
+    if (loglevel == CN_LP_LEVEL_NOPE_WORD ||
+        loglevel == CN_LP_LEVEL_TINY_WORD ||
+        loglevel == CN_LP_LEVEL_SHORT_WORD)
         return;
 
     XMLElement *mapTag = node->InsertEndChild(doc.NewElement(CNS_TAG_PATH))->ToElement();
@@ -148,7 +150,9 @@ void XmlLogger::writeToLogPath(tinyxml2::XMLElement *node, const std::list<Node>
 
 void XmlLogger::writeToLogHPath(tinyxml2::XMLElement *node, const std::list<Node> &hppath)
 {
-    if (loglevel == CN_LP_LEVEL_NOPE_WORD || loglevel == CN_LP_LEVEL_TINY_WORD || hppath.empty())
+    if (loglevel == CN_LP_LEVEL_NOPE_WORD || 
+        loglevel == CN_LP_LEVEL_TINY_WORD ||
+        hppath.empty())
         return;
     int partnumber = 0;
     XMLElement *hplevel = node->InsertEndChild(doc.NewElement(CNS_TAG_HPLEVEL))->ToElement();

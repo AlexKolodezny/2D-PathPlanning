@@ -279,13 +279,6 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     }
     Expansion expansion{map, options, *h};
 
-    // for (size_t i = 0; i < map.getMapHeight(); ++i) {
-    //     for (size_t j = 0; j < map.getMapWidth(); ++j) {
-    //         std::cout << map.getCellDanger(i, j) << ' ';
-    //     }
-    //     std::cout << std::endl;
-    // }
-
     open.insert_node({
         map.getStartNode().first, 
         map.getStartNode().second, 
@@ -321,8 +314,6 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             open.insert_node(nxt);
         }
     }
-
-    std::cout << "The number of paths: " << solves.path_ends().size() <<  std::endl;
 
     for (auto end : solves.path_ends()) {
         sresult.lppaths.push_back(make_primary_path(end));

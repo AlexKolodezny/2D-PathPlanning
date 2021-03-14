@@ -46,7 +46,7 @@
         <allowsqueeze>true</allowsqueeze>
     </algorithm>
     <options>
-        <loglevel>0.5</loglevel>
+        <loglevel>1.5</loglevel>
         <logpath />
         <logfilename />
     </options>
