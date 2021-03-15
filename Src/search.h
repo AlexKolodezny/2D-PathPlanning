@@ -12,9 +12,8 @@
 class Search
 {
     public:
-        Search();
-        ~Search(void);
-        SearchResult startSearch(ILogger *Logger, const Map &Map, const EnvironmentOptions &options);
+        virtual ~Search() {}
+        virtual SearchResult startSearch(ILogger *Logger, const Map &Map, const EnvironmentOptions &options) = 0;
 
     protected:
         //CODE HERE

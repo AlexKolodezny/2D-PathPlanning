@@ -1,6 +1,7 @@
 #ifndef SEARCHRESULT_H
 #define SEARCHRESULT_H
 #include <list>
+#include <vector>
 #include "node.h"
 
 //That's the output structure for the search algorithms.

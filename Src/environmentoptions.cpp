@@ -62,51 +62,39 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
 
     if (value == CNS_SP_ST_DIJK) {
         this->algorithm = CN_SP_ST_DIJK;
-    }
-    else if (value == CNS_SP_ST_ASTAR || value == CNS_SP_ST_BOASTAR) {
-        if (value == CNS_SP_ST_ASTAR) {
-            this->algorithm = CN_SP_ST_ASTAR;
-            element = algorithm->FirstChildElement(CNS_TAG_HW);
-            if (!element) {
-                std::cout << "Warning! No '" << CNS_TAG_HW << "' tag found in algorithm section." << std::endl;
+    } else if (value == CNS_SP_ST_ASTAR) {
+        this->algorithm = CN_SP_ST_ASTAR;
+        element = algorithm->FirstChildElement(CNS_TAG_HW);
+        if (!element) {
+            std::cout << "Warning! No '" << CNS_TAG_HW << "' tag found in algorithm section." << std::endl;
+            std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
+            hweight = 1;
+        }
+        else {
+            stream << element->GetText();
+            stream >> hweight;
+            stream.str("");
+            stream.clear();
+
+            if (hweight < 1) {
+                std::cout << "Warning! Value of '" << CNS_TAG_HW << "' tag is not correctly specified. Should be >= 1."
+                        << std::endl;
                 std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
                 hweight = 1;
             }
-            else {
-                stream << element->GetText();
-                stream >> hweight;
-                stream.str("");
-                stream.clear();
-
-                if (hweight < 1) {
-                    std::cout << "Warning! Value of '" << CNS_TAG_HW << "' tag is not correctly specified. Should be >= 1."
-                            << std::endl;
-                    std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
-                    hweight = 1;
-                }
-            }
-        } else {
-            this->algorithm = CN_SP_ST_BOASTAR;
-            element = algorithm->FirstChildElement(CNS_TAG_DL);
-            if (!element) {
-                std::cout << "Warning! No '" << CNS_TAG_DL << "' tag found in algorithm section." << std::endl;
-                std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 0" << std::endl;
-                dangerlevel = 0;
-            } else {
-                stream << element->GetText();
-                stream >> dangerlevel;
-                stream.str("");
-                stream.clear();
-
-                if (dangerlevel < 0) {
-                    std::cout << "Warning! Value of '" << CNS_TAG_DL << "' tag is not correctly specified. Should be >= 1."
-                            << std::endl;
-                    std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 1." << std::endl;
-                    dangerlevel = 0;
-                }
-            }
         }
-
+    } else if (value == CNS_SP_ST_BOASTAR) {
+        this->algorithm = CN_SP_ST_BOASTAR;
+    } else if (value == CNS_SP_ST_GAMOPP) {
+        this->algorithm = CN_SP_ST_GAMOPP;
+    } else {
+        std::cout << "Error! Value of '" << CNS_TAG_ST << "' tag (algorithm name) is not correctly specified."
+                  << std::endl;
+        std::cout << "Supported algorithm's names are: '" << CNS_SP_ST_DIJK << "', '"
+                  << CNS_SP_ST_ASTAR << "', " << CNS_SP_ST_BOASTAR << "', '" CNS_SP_ST_GAMOPP << "'." << std::endl;
+        return false;
+    }
+    if (value == CNS_SP_ST_ASTAR || value == CNS_SP_ST_BOASTAR) {
         element = algorithm->FirstChildElement(CNS_TAG_MT);
         if (!element) {
             std::cout << "Warning! No '" << CNS_TAG_MT << "' tag found in XML file." << std::endl;
@@ -129,12 +117,26 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
         }
 
     }
-    else {
-        std::cout << "Error! Value of '" << CNS_TAG_ST << "' tag (algorithm name) is not correctly specified."
-                  << std::endl;
-        std::cout << "Supported algorithm's names are: '" << CNS_SP_ST_DIJK << "', '"
-                  << CNS_SP_ST_ASTAR << "'." << std::endl;
-        return false;
+    if (value == CNS_SP_ST_GAMOPP || value == CNS_SP_ST_BOASTAR) {
+        element = algorithm->FirstChildElement(CNS_TAG_DL);
+        if (!element) {
+            std::cout << "Warning! No '" << CNS_TAG_DL << "' tag found in algorithm section." << std::endl;
+            std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 0" << std::endl;
+            dangerlevel = 0;
+        } else {
+            stream << element->GetText();
+            stream >> dangerlevel;
+            stream.str("");
+            stream.clear();
+
+            if (dangerlevel < 0) {
+                std::cout << "Warning! Value of '" << CNS_TAG_DL << "' tag is not correctly specified. Should be >= 1."
+                        << std::endl;
+                std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 1." << std::endl;
+                dangerlevel = 0;
+            }
+        }
+
     }
 
 

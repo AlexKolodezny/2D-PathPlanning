@@ -1,5 +1,8 @@
 #include "mission.h"
+#include "boastar.h"
+#include "genetic.h"
 #include <iostream>
+#include <memory>
 
 Mission::Mission()
 {
@@ -44,11 +47,20 @@ bool Mission::createEnvironmentOptions()
 void Mission::createSearch()
 {
     map.setDistanceMap(options.dangerlevel);
+    if (options.algorithm == CN_SP_ST_GAMOPP) {
+        search = std::unique_ptr<Search>(new GeneticAlgorithm());
+    } else {
+        search = std::unique_ptr<Search>(new BOAstarSearch());
+    }
 }
 
 void Mission::startSearch()
 {
-    sr = search.startSearch(logger, map, options);
+    if (!search) {
+        std::cerr << "Error! Search has not been created!" << std::endl;
+        return;
+    }
+    sr = search->startSearch(logger, map, options);
 }
 
 void Mission::printSearchResultsToConsole()

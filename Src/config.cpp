@@ -20,7 +20,7 @@ bool Config::getConfig(const char *FileName)
 {
     std::string value;
     std::stringstream stream;
-    tinyxml2::XMLElement *root = nullptr, *algorithm = nullptr, *element = nullptr, *options = nullptr;
+    tinyxml2::XMLElement *root = nullptr, *element = nullptr, *options = nullptr;
 
     tinyxml2::XMLDocument doc;
     if (doc.LoadFile(FileName) != tinyxml2::XMLError::XML_SUCCESS) {

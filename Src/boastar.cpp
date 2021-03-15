@@ -1,16 +1,17 @@
-#include "search.h"
+#include "boastar.h"
 #include <chrono>
 #include <memory>
 #include <iterator>
 #include <map>
 #include <unordered_map>
+#include "search.h"
 
-Search::Search()
+BOAstarSearch::BOAstarSearch()
 {
 //set defaults here
 }
 
-Search::~Search() {}
+BOAstarSearch::~BOAstarSearch() {}
 
 class Heuristic {
 protected:
@@ -248,7 +249,7 @@ std::list<Node> make_primary_path(Node *end) {
     return path;
 }
 
-SearchResult Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
+SearchResult BOAstarSearch::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
 {
     auto start_time = std::chrono::steady_clock::now();
 

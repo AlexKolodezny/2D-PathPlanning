@@ -9,6 +9,7 @@
 #include "environmentoptions.h"
 #include "search.h"
 #include "xmllogger.h"
+#include <memory>
 
 //That's the wrap up class that first creates all the needed objects (Map, Search etc.)
 //and then runs the search and then cleans everything up.
@@ -37,7 +38,7 @@ class Mission
         Map                     map;
         Config                  config;
         EnvironmentOptions      options;
-        Search                  search;
+        std::unique_ptr<Search>                  search;
         ILogger*                logger;
         const char*             fileName;
         SearchResult            sr;

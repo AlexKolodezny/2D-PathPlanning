@@ -7,6 +7,8 @@ set(HEADERS         config.h
                     mission.h
                     node.h
                     search.h
+                    boastar.h
+                    genetic.h
                     searchresult.h
                     tinyxml2.h
                     xmllogger.h)
@@ -14,8 +16,9 @@ set(HEADERS         config.h
 set(SOURCES         config.cpp
                     environmentoptions.cpp
                     map.cpp
+                    genetic.cpp
                     mission.cpp
-                    search.cpp
+                    boastar.cpp
                     tinyxml2.cpp
                     xmllogger.cpp)
 
