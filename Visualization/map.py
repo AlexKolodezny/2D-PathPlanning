@@ -2,6 +2,7 @@ import sys
 import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 from matplotlib.widgets import Slider
+import numpy as np
 
 if len(sys.argv) < 2:
     print("Error! Filename is required!")
@@ -42,10 +43,16 @@ for item in paths.findall("item"):
     paths_length.append(float(path_summary.get("length")))
     paths_danger.append(float(path_summary.get("danger")))
     path_tag = item.find("lplevel")
-    path = []
+    pathx = []
+    pathy = []
     for node in path_tag.findall("node"):
-        path.append((int(node.get("y")), int(node.get("x"))))
-    lppaths.append(path)
+        pathx.append(int(node.get("y")))
+        pathy.append(int(node.get("x")))
+    lppaths.append((np.asarray(pathx), np.asarray(pathy)))
+
+paths_danger = np.array(paths_danger)
+paths_length = np.array(paths_length)
+grid = np.asarray(grid)
 
 fig = plt.figure(constrained_layout = True)
 spec = fig.add_gridspec(ncols = 2, nrows = 2, height_ratios = [10, 1])
@@ -56,21 +63,20 @@ ax_silder = fig.add_subplot(spec[1, :])
 slider = Slider(ax_silder, "Path", 0, 1, valinit = 0)
 
 cur_num = 0
-for coor in lppaths[cur_num]:
-    grid[coor[0]][coor[1]] = 2
+grid[lppaths[cur_num][0], lppaths[cur_num][1]] = 2
 
 im = ax1.imshow(grid)
 ax2.plot(paths_length, paths_danger, "b.")
 l, = ax2.plot(paths_length[cur_num], paths_danger[cur_num], "ro")
+ax2.set_xlabel("length")
+ax2.set_ylabel("danger")
 ax2.grid()
 
 def update(val):
     global cur_num
-    for coor in lppaths[cur_num]:
-        grid[coor[0]][coor[1]] = 0
+    grid[lppaths[cur_num][0], lppaths[cur_num][1]] = 0
     cur_num = int(val * (len(lppaths) - 1))
-    for coor in lppaths[cur_num]:
-        grid[coor[0]][coor[1]] = 2
+    grid[lppaths[cur_num][0], lppaths[cur_num][1]] = 2
     
     im.set_array(grid)
     l.set_xdata(paths_length[cur_num])
