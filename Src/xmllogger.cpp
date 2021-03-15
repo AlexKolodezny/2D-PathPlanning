@@ -192,7 +192,7 @@ void XmlLogger::writeToLogNotFound()
     if (loglevel == CN_LP_LEVEL_NOPE_WORD)
         return;
 
-    XMLElement *node = doc.FirstChildElement(CNS_TAG_ROOT)->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_PATH);
+    XMLElement *node = doc.FirstChildElement(CNS_TAG_ROOT)->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_PATHS);
     node->InsertEndChild(doc.NewText("Path NOT found!"));
 }
 
