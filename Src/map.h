@@ -47,5 +47,15 @@ class Map
 
 };
 
+class HashCoordinate {
+    int map_width;
+public:
+    HashCoordinate(int width): map_width(width) {}
+
+    int operator()(std::pair<int, int> coor) const {
+        return std::hash<int>()(coor.first * map_width + coor.second);
+    }
+};
+
 #endif
 
