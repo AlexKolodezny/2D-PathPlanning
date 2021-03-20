@@ -30,19 +30,19 @@ Map::~Map()
     }
 }
 
-bool Map::CellIsTraversable(int i, int j) const
+bool Map::CellIsTraversable(Cell c) const
 {
-    return (Grid[i][j] == CN_GC_NOOBS);
+    return (Grid[c.first][c.second] == CN_GC_NOOBS);
 }
 
-bool Map::CellIsObstacle(int i, int j) const
+bool Map::CellIsObstacle(Cell c) const
 {
-    return (Grid[i][j] != CN_GC_NOOBS);
+    return (Grid[c.first][c.second] != CN_GC_NOOBS);
 }
 
-bool Map::CellOnGrid(int i, int j) const
+bool Map::CellOnGrid(Cell c) const
 {
-    return (i < height && i >= 0 && j < width && j >= 0);
+    return (c.first < height && c.first >= 0 && c.second < width && c.second >= 0);
 }
 
 bool Map::setMap(const char *FileName)
@@ -276,7 +276,7 @@ bool Map::setMap(const char *FileName)
                 int val;
                 if (elems.size() > 0)
                     for (grid_j = 0; grid_j < width; ++grid_j) {
-                        if (grid_j == elems.size())
+                        if (grid_j == (int)elems.size())
                             break;
                         stream.str("");
                         stream.clear();
@@ -334,7 +334,7 @@ bool Map::setDistanceMap(int max) {
         std::fill_n(distance_map[i], width, -1);
     }
 
-    std::queue<std::pair<int, int>> q;
+    std::queue<Cell> q;
 
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
@@ -352,8 +352,8 @@ bool Map::setDistanceMap(int max) {
         auto v = q.front();
         q.pop();
         for (int k = 0; k < 4; ++k) {
-            std::pair<int, int> u{v.first + dx[k], v.second + dy[k]};
-            if (!CellOnGrid(u.first, u.second)) {
+            Cell u{v.first + dx[k], v.second + dy[k]};
+            if (!CellOnGrid(u)) {
                 continue;
             }
             if (distance_map[u.first][u.second] == -1) {
@@ -365,29 +365,29 @@ bool Map::setDistanceMap(int max) {
     return true;
 }
 
-int Map::getCellDanger(int i, int j) const {
-    if (i < 0 || i >= height) {
+int Map::getCellDanger(Cell c) const {
+    if (c.first < 0 || c.first >= height) {
         return -1;
     }
     
-    if (j < 0 || j >= width) {
+    if (c.second < 0 || c.second >= width) {
         return -1;
     }
 
-    return distance_map[i][j];
+    return distance_map[c.first][c.second];
 }
 
 
 
-int Map::getValue(int i, int j) const
+int Map::getValue(Cell c) const
 {
-    if (i < 0 || i >= height)
+    if (c.first < 0 || c.first >= height)
         return -1;
 
-    if (j < 0 || j >= width)
+    if (c.second < 0 || c.second >= width)
         return -1;
 
-    return Grid[i][j];
+    return Grid[c.first][c.second];
 }
 
 int Map::getMapHeight() const
@@ -405,10 +405,10 @@ double Map::getCellSize() const
       return cellSize;
 }
 
-std::pair<int, int> Map::getStartNode() const {
+Cell Map::getStartNode() const {
     return {start_i, start_j};
 }
 
-std::pair<int, int> Map::getGoalNode() const {
+Cell Map::getGoalNode() const {
     return {goal_i, goal_j};
 }

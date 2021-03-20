@@ -7,6 +7,7 @@
 #include <string>
 #include <algorithm>
 #include "tinyxml2.h"
+#include "cell.h"
 
 //That's the class that stores BOTH grid map data AND start-goal locations.
 //getValue reads the input XML and fills the Map object.
@@ -34,16 +35,16 @@ class Map
 
         bool setMap(const char *FileName);
         bool setDistanceMap(int max);
-        bool CellIsTraversable (int i, int j) const;
-        bool CellOnGrid (int i, int j) const;
-        bool CellIsObstacle(int i, int j) const;
-        int getCellDanger(int i, int j) const;
-        int  getValue(int i, int j) const;
+        bool CellIsTraversable (Cell c) const;
+        bool CellOnGrid (Cell c) const;
+        bool CellIsObstacle(Cell c) const;
+        int getCellDanger(Cell c) const;
+        int  getValue(Cell c) const;
         int getMapHeight() const;
         int getMapWidth() const;
         double getCellSize() const;
-        std::pair<int, int> getStartNode() const;
-        std::pair<int, int> getGoalNode() const;
+        Cell getStartNode() const;
+        Cell getGoalNode() const;
 
 };
 
@@ -52,7 +53,7 @@ class HashCoordinate {
 public:
     HashCoordinate(int width): map_width(width) {}
 
-    int operator()(std::pair<int, int> coor) const {
+    int operator()(Cell coor) const {
         return std::hash<int>()(coor.first * map_width + coor.second);
     }
 };

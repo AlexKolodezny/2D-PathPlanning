@@ -5,7 +5,9 @@
 #include <map>
 #include <unordered_map>
 #include "search.h"
-#include "path_utils.h"
+#include "section.h"
+#include "node.h"
+#include <cmath>
 
 BOAstarSearch::BOAstarSearch()
 {
@@ -19,55 +21,59 @@ protected:
     double w;
 public:
     Heuristic(double w): w(w) {}
-    virtual double metric(int, int) const = 0;
-    double operator()(int i, int j) const {
-        return metric(i, j) * w;
+    virtual double metric(Cell) const = 0;
+    double operator()(Cell c) const {
+        return metric(c) * w;
     }
 };
 
 class ZeroHeuristic : public Heuristic {
 public:
     ZeroHeuristic(): Heuristic(1.) {}
-    double metric(int, int) const override {
+    double metric(Cell) const override {
         return 0;
     }
 };
 
 class EuclidianHeuristic : public Heuristic {
-    int x;
-    int y;
+    Cell goal;
 public:
-    EuclidianHeuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
-    double metric(int i, int j) const override {
-        return sqrt((i - x) * (i - x) + (j - y) * (j - y));
+    EuclidianHeuristic(Cell goal, double w): Heuristic(w), goal{goal} {}
+    double metric(Cell c) const override {
+        c -= goal;
+        return sqrt(c.first * c.first + c.second * c.second);
     }
 };
 
 class ChebishevHeuristic : public Heuristic {
-    int x;
-    int y;
+    Cell goal;
 public:
-    ChebishevHeuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
-    double metric(int i, int j) const override {
-        return std::max(abs(i - x), abs(j - y));
+    ChebishevHeuristic(Cell goal, double w): Heuristic(w), goal{goal} {}
+    double metric(Cell c) const override {
+        c -= goal;
+        return std::max(std::abs(c.first), std::abs(c.second));
     }
 };
 
 class OctileHeuristic : public Heuristic {
-    int x, y;
+    Cell goal;
 public:
-    OctileHeuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
-    double metric(int i, int j) const override {
-        return (std::min(abs(i - x), abs(j - y)) * sqrt(2.) + abs(abs(i - x) - abs(j - y)));
+    OctileHeuristic(Cell goal, double w): Heuristic(w), goal{goal} {}
+    double metric(Cell c) const override {
+        c -= goal;
+        c.first = std::abs(c.first);
+        c.second = std::abs(c.second);
+        return (std::min(c.first, c.second) * sqrt(2.) + std::abs(c.first - c.second));
     }
 };
 
 class ManhattanEuristic : public Heuristic {
-    int x, y;
+    Cell goal;
 public:
-    ManhattanEuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
-    double metric(int i, int j) const override {
-        return (abs(i - x) + abs(j - y));
+    ManhattanEuristic(Cell goal, double w): Heuristic(w), goal{goal} {}
+    double metric(Cell c) const override {
+        c -= goal;
+        return (std::abs(c.first) + std::abs(c.second));
     }
 };
 
@@ -108,7 +114,7 @@ public:
 
 class CloseContainer {
     std::list<Node> container;
-    std::unordered_map<std::pair<int, int>, double, HashCoordinate> g_min;
+    std::unordered_map<Cell, double, HashCoordinate> g_min;
 public:
     CloseContainer(HashCoordinate hash): container{}, g_min{10, hash} {}
 
@@ -121,15 +127,15 @@ public:
     }
 
     bool is_non_dominated(Node node) const {
-        if (g_min.find({node.i, node.j}) == g_min.end()) {
+        if (g_min.find(node) == g_min.end()) {
             return true;
         }
-        return node.g2 < g_min.at({node.i, node.j});
+        return node.g2 < g_min.at(node);
     }
 
     Node* insert(Node node) {
         container.push_back(node);
-        g_min[{node.i, node.j}] = node.g2;
+        g_min[node] = node.g2;
         return &container.back();
     }
 };
@@ -160,8 +166,18 @@ class Expansion {
     const Map& map;
     const EnvironmentOptions& op;
     const Heuristic& h;
-    const int dx[10]{1, 1, 1, 0, -1, -1, -1, 0, 1, 1};
-    const int dy[10]{-1, 0, 1, 1, 1, 0, -1, -1, -1, 0};
+    const Cell diff[10]{
+        {1, -1},
+        {1, 0},
+        {1, 1},
+        {0, 1},
+        {-1, 1},
+        {-1, 0},
+        {-1, -1},
+        {0, -1},
+        {1, -1},
+        {1, 0}
+    };
     const double dl[10]{sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1.};
 public:
     Expansion(const Map& m, const EnvironmentOptions& op, const Heuristic& h): map(m), op(op), h(h) {}
@@ -174,48 +190,44 @@ public:
     //if k-th node is unreachable, returns node with parent == nullptr
     Node get(Node& cur, int k) const {
         ++k;
-        if (!map.CellOnGrid(cur.i + dx[k], cur.j + dy[k]) || map.CellIsObstacle(cur.i + dx[k], cur.j + dy[k])) {
+        if (!map.CellOnGrid(cur + diff[k]) || map.CellIsObstacle(cur + diff[k])) {
             return {};
         }
         if (k % 2 == 0) {
             if (!op.allowdiagonal) {
                 return {};
             } else if (!op.cutcorners) {
-                if (map.CellIsObstacle(cur.i + dx[k - 1], cur.j + dy[k - 1]) || map.CellIsObstacle(cur.i + dx[k + 1], cur.j + dy[k + 1])) {
+                if (map.CellIsObstacle(cur + diff[k - 1]) || map.CellIsObstacle(cur + diff[k + 1])) {
                     return {};
                 }
             } else if (!op.allowsqueeze) {
-                if (map.CellIsObstacle(cur.i + dx[k - 1], cur.j + dy[k - 1]) && map.CellIsObstacle(cur.i + dx[k + 1], cur.j + dy[k + 1])) {
+                if (map.CellIsObstacle(cur + diff[k - 1]) && map.CellIsObstacle(cur + diff[k + 1])) {
                     return {};
                 }
             }
         }
         Node nxt{
-            cur.i + dx[k], 
-            cur.j + dy[k], 
-            h(cur.i + dx[k], cur.j + dy[k]), 
+            cur + diff[k],
+            h(cur + diff[k]), 
             cur.g1 + dl[k], 
-            cur.g2 + map.getCellDanger(cur.i + dx[k], cur.j + dy[k]),
+            cur.g2 + map.getCellDanger(cur + diff[k]),
             &cur};
         return nxt;
     }
 };
 
-std::list<Node> make_primary_path(Node *end) {
-    std::list<Node> path;
+std::list<Cell> make_primary_path(Node *end) {
+    std::list<Cell> path;
     while (end != nullptr) {
         path.push_front(*end);
         end = end->parent;
     }
-    path.front().parent = nullptr;
-    for (auto it = std::next(path.begin()); it != path.end(); ++it) {
-        it->parent = &*std::prev(it);
-    }
     return path;
 }
 
-SearchResult BOAstarSearch::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
+SearchResult BOAstarSearch::startSearch(ILogger *, const Map &map, const EnvironmentOptions &options)
 {
+
     auto start_time = std::chrono::steady_clock::now();
 
     OpenContainer open{};
@@ -246,9 +258,8 @@ SearchResult BOAstarSearch::startSearch(ILogger *Logger, const Map &map, const E
     Expansion expansion{map, options, *h};
 
     open.insert_node({
-        map.getStartNode().first, 
-        map.getStartNode().second, 
-        h->operator()(map.getStartNode().first, map.getStartNode().second), 
+        map.getStartNode(),
+        h->operator()(map.getStartNode()), 
         0,
         0,
         nullptr});
@@ -265,11 +276,11 @@ SearchResult BOAstarSearch::startSearch(ILogger *Logger, const Map &map, const E
         }
 
         auto ptr = close.insert(node);
-        if (ptr->i == map.getGoalNode().first && ptr->j == map.getGoalNode().second) {
+        if (*ptr == map.getGoalNode()) {
             solves.insert_node(ptr);
         }
 
-        for (int k = 0; k < expansion.size(); ++k) {
+        for (size_t k = 0; k < expansion.size(); ++k) {
             auto nxt = expansion.get(*ptr, k);
             if (!nxt.parent) {
                 continue;
@@ -282,17 +293,11 @@ SearchResult BOAstarSearch::startSearch(ILogger *Logger, const Map &map, const E
     }
 
     for (auto end : solves.path_ends()) {
-        sresult.lppaths.push_back(make_primary_path(end));
+        auto res = make_primary_path(end);
+        sresult.paths.push_back({res, make_secondary_path(res), end->g1, end->g2});
     }
 
     sresult.time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0;
-
-    for (auto path : sresult.lppaths) {
-        sresult.hppaths.push_back(make_secondary_path(path));
-        sresult.pathlength.push_back(path.back().g1);
-    }
-
-    sresult.pathfound = !sresult.lppaths.empty();
 
     sresult.nodescreated = open.size() + close.size();
     sresult.numberofsteps = countNumberOfSteps;

@@ -7,43 +7,47 @@
 #include <random>
 #include <vector>
 #include <algorithm>
-#include "node.h"
-#include "path_utils.h"
+#include "cell.h"
+#include "section.h"
 
-const int dx[4] = {1, 0, -1, 0};
-const int dy[4] = {0, 1, 0, -1};
+Cell diff[4] = {
+    {1, 0},
+    {0, 1},
+    {-1, 0},
+    {0, -1}
+};
 
-int get_direction(std::pair<int, int> first, std::pair<int, int> second) {
+int get_direction(Cell first, Cell second) {
     int k = 0;
-    while (first.first + dx[k] != second.first || first.second + dy[k] != second.second) {
+    while (first + diff[k] != second) {
         ++k;
     }
     return k;
 }
 
-double length_between_adjecent_cells(std::pair<int, int> a, std::pair<int, int> b) {
-    if (abs(a.first - b.first) == abs(a.second - b.second)) {
+double length_between_adjecent_cells(Cell a, Cell b) {
+    a -= b;
+    if (std::abs(a.first) == std::abs(a.second)) {
         return CN_SQRT_TWO;
     }
     return 1;
 }
 
 
-long long vector_product(std::pair<int, int> a, std::pair<int, int> b, std::pair<int, int> c) {
+long long vector_product(Cell a, Cell b, Cell c) {
     return (long long)(a.first - c.first) * (b.second - c.second) - (long long)(a.second - c.second) * (b.first - c.first);
 }
 
 //make_line_path_helper make path between start and end included
 //require start.first <= end.first && start.second <= end.second
-std::list<GeneticNode> make_line_path_helper(std::pair<int, int> start, std::pair<int, int> end) {
+std::list<GeneticNode> make_line_path_helper(Cell start, Cell end) {
     std::list<GeneticNode> res;
-    for (std::pair<int, int> cur = start; cur != end; ) {
+    Cell begin_line = 2 * start + Cell{1, 1};
+    Cell end_line = 2 * end + Cell{1, 1};
+    for (Cell cur = start; cur != end; ) {
         res.push_back({cur});
-        std::pair<int ,int> p1{2 * cur.first + 2, 2 * cur.second};
-        std::pair<int, int> p2{2 * cur.first + 2, 2 * cur.second + 2};
-        std::pair<int, int> p3{2 * cur.first, 2 * cur.second + 2};
-        std::pair<int, int> begin_line{2 * start.first + 1, 2 * start.second + 1};
-        std::pair<int, int> end_line{2 * end.first + 1, 2 * end.second + 1};
+        Cell p1 = cur * 2 + Cell{2, 0};
+        Cell p2 = cur * 2 + Cell{2, 2};
         long long v1 = vector_product(end_line, begin_line, p1);
         long long v2 = vector_product(end_line, begin_line, p2);
         if ((v1 <= 0 && v2 >= 0) || (v2 <= 0 && v1 >= 0)) {
@@ -57,7 +61,7 @@ std::list<GeneticNode> make_line_path_helper(std::pair<int, int> start, std::pai
 
 }
 
-std::list<GeneticNode> GeneticAlgorithm::line_path(std::pair<int, int> start, std::pair<int, int> end) {
+std::list<GeneticNode> GeneticAlgorithm::line_path(Cell start, Cell end) {
     if (start.first > end.first) {
         if (start.second > end.second) {
             auto res = make_line_path_helper(end, start);
@@ -69,7 +73,7 @@ std::list<GeneticNode> GeneticAlgorithm::line_path(std::pair<int, int> start, st
         end.first = -end.first;
         auto res = make_line_path_helper(start, end);
         for (auto& cur : res) {
-            cur.cell.first = -cur.cell.first;
+            cur.first = -cur.first;
         }
         res.pop_back();
         return res;
@@ -79,7 +83,7 @@ std::list<GeneticNode> GeneticAlgorithm::line_path(std::pair<int, int> start, st
         end.second = -end.second;
         auto res = make_line_path_helper(start, end);
         for (auto& cur : res) {
-            cur.cell.second = -cur.cell.second;
+            cur.second = -cur.second;
         }
         res.pop_back();
         return res;
@@ -92,15 +96,15 @@ std::list<GeneticNode> GeneticAlgorithm::line_path(std::pair<int, int> start, st
 //random_path generates path from start to end not included
 //resulting legnth and danger return in the poiner arguments
 //the end cell does not included in danger
-std::list<GeneticNode> GeneticAlgorithm::random_path(std::pair<int, int> start, std::pair<int, int> end) {
+std::list<GeneticNode> GeneticAlgorithm::random_path(Cell start, Cell end) {
     std::pair<double, double> mean{start.first + end.first, start.second + end.second};
     mean.first /= 2;
     mean.second /= 2;
     std::normal_distribution<double> d{0, static_cast<double>(std::max(std::abs(start.first - end.first), std::abs(start.second - end.second)))};
-    std::pair<int, int> pass;
+    Cell pass;
     do {
         pass = {std::round(d(random_generator) + mean.first), std::round(d(random_generator) + mean.second)};
-    } while (!grid.CellOnGrid(pass.first, pass.second));
+    } while (!grid.CellOnGrid(pass));
     std::list<GeneticNode> res;
     res.splice(res.end(), line_path(start, pass));
     res.splice(res.end(), line_path(pass, end));
@@ -113,13 +117,13 @@ void GeneticAlgorithm::initialize_length_and_danger(GeneticAlgorithm::Individ& i
     ind.cross_obstacles = 0;
 
     for (auto it = ind.path.begin(); it != std::prev(ind.path.end()); ++it) {
-        ind.cross_obstacles += grid.CellIsObstacle(it->cell.first, it->cell.second);
-        ind.danger += grid.getCellDanger(it->cell.first, it->cell.second);
-        ind.length += length_between_adjecent_cells(it->cell, next(it)->cell);
+        ind.cross_obstacles += grid.CellIsObstacle(*it);
+        ind.danger += grid.getCellDanger(*it);
+        ind.length += length_between_adjecent_cells(*it, *std::next(it));
     }
-    auto end = std::prev(ind.path.end())->cell;
-    ind.danger += grid.getCellDanger(end.first, end.second);
-    ind.cross_obstacles += grid.CellIsObstacle(end.first, end.second);
+    Cell end = *std::prev(ind.path.end());
+    ind.danger += grid.getCellDanger(end);
+    ind.cross_obstacles += grid.CellIsObstacle(end);
     return;
 }
 
@@ -167,11 +171,11 @@ auto GeneticAlgorithm::crossover(const Individ& parent1, const Individ& parent2)
         return {};
     }
     for (auto it = this_search_start; it != this_search_end; ++it) {
-        cells[it->cell] = it;
+        cells[*it] = it;
     }
     int count = 0;
     for (auto it = other_search_start; it != other_search_end; ++it) {
-        if (cells.find(it->cell) != cells.end()) {
+        if (cells.find(*it) != cells.end()) {
             ++count;
         }
     }
@@ -183,9 +187,9 @@ auto GeneticAlgorithm::crossover(const Individ& parent1, const Individ& parent2)
     std::list<GeneticNode>::const_iterator it_this, it_other;
     
     for (auto it = other_search_start; it != other_search_end; ++it) {
-        if (cells.find(it->cell) != cells.end()) {
+        if (cells.find(*it) != cells.end()) {
             if (num == 0) {
-                it_this = cells[it->cell];
+                it_this = cells[*it];
                 it_other = it;
                 break;
             }
@@ -210,9 +214,9 @@ void GeneticAlgorithm::mutation(Individ& ind) {
     auto start_erase = std::next(ind.path.begin(), st);
     auto end_erase = std::next(start_erase, fn - st);
 
-    auto start = start_erase->cell;
+    Cell start = *start_erase;
     ind.path.erase(start_erase, end_erase);
-    ind.path.splice(end_erase, random_path(start, end_erase->cell));
+    ind.path.splice(end_erase, random_path(start, *end_erase));
 
     initialize_length_and_danger(ind);
 }
@@ -229,42 +233,42 @@ void GeneticAlgorithm::length_refiner(Individ& ind) {
     auto start_erase = std::next(ind.path.begin(), st);
     auto end_erase = std::next(start_erase, fn - st);
 
-    auto start = start_erase->cell;
+    Cell start = *start_erase;
     ind.path.erase(start_erase, end_erase);
-    ind.path.splice(end_erase, line_path(start, end_erase->cell));
+    ind.path.splice(end_erase, line_path(start, *end_erase));
     initialize_length_and_danger(ind);
 
 }
 
 void GeneticAlgorithm::remove_cycles(Individ& ind) const {
-    std::unordered_map<std::pair<int, int>, std::list<GeneticNode>::iterator, HashCoordinate> cells{10, HashCoordinate(grid.getMapHeight())};
+    std::unordered_map<Cell, std::list<GeneticNode>::iterator, HashCoordinate> cells{10, HashCoordinate(grid.getMapHeight())};
     for (auto it = ind.path.begin(); it != ind.path.end(); ++it) {
-        if (cells.find(it->cell) != cells.end()) {
-            auto start_erase = cells[it->cell];
+        if (cells.find(*it) != cells.end()) {
+            auto start_erase = cells[*it];
             for (auto j = start_erase; j != it; ++j) {
-                cells.erase(j->cell);
+                cells.erase(*j);
             }
             ind.path.erase(start_erase, it);
         }
-        cells[it->cell] = it;
+        cells[*it] = it;
     }
     
     initialize_length_and_danger(ind);
 }
 
 //bypass is used in invalid_refiner
-std::list<GeneticNode> bypass(const Map& grid, std::unordered_map<std::pair<int, int>, std::list<GeneticNode>::iterator, HashCoordinate> goals, std::pair<int, int> start, int turn, int dir, int max_danger) {
-    std::pair<int, int> cur = start;
+std::list<GeneticNode> bypass(const Map& grid, std::unordered_map<Cell, std::list<GeneticNode>::iterator, HashCoordinate> goals, Cell start, int turn, int dir, int max_danger) {
+    Cell cur = start;
     std::list<GeneticNode> res;
     while (true) {
-        std::pair<int, int> next;
+        Cell next;
         int i = 0;
         for (; i < 4; ++i) {
-            next = {cur.first + dx[dir], cur.second + dy[dir]};
-            if (!grid.CellOnGrid(next.first, next.second)) {
+            next = cur + diff[dir];
+            if (!grid.CellOnGrid(next)) {
                 return {};
             }
-            if (!grid.CellIsObstacle(next.first, next.second) && grid.getCellDanger(next.first, next.second) <= max_danger) {
+            if (!grid.CellIsObstacle(next) && grid.getCellDanger(next) <= max_danger) {
                 break;
             }
             dir = (dir + 4 + turn) % 4;
@@ -287,28 +291,28 @@ std::list<GeneticNode> bypass(const Map& grid, std::unordered_map<std::pair<int,
 
 bool GeneticAlgorithm::invalid_refiner(Individ& ind) {
 
-    std::unordered_map<std::pair<int, int>, std::list<GeneticNode>::iterator, HashCoordinate> cells{10, HashCoordinate(grid.getMapHeight())};
+    std::unordered_map<Cell, std::list<GeneticNode>::iterator, HashCoordinate> cells{10, HashCoordinate(grid.getMapHeight())};
 
     for (auto it = ind.path.begin(); it != ind.path.end(); ++it) {
-        cells[it->cell] = it;
+        cells[*it] = it;
     }
 
     for (auto it = ind.path.begin(); it != ind.path.end(); ++it) {
-        if (grid.CellIsObstacle(it->cell.first, it->cell.second)) {
+        if (grid.CellIsObstacle(*it)) {
             auto start = std::prev(it);
-            int k = get_direction(start->cell, it->cell);
+            int k = get_direction(*start, *it);
 
             std::list<GeneticNode> res;
             
             if (at_random(0.5)) {
-                res = bypass(this->grid, cells, start->cell, 1, k, env.dangerlevel);
+                res = bypass(this->grid, cells, *start, 1, k, env.dangerlevel);
                 if (res.empty()) {
-                    res = bypass(this->grid, cells, start->cell, -1, k, env.dangerlevel);
+                    res = bypass(this->grid, cells, *start, -1, k, env.dangerlevel);
                 }
             } else {
-                res = bypass(this->grid, cells, start->cell, -1, k, env.dangerlevel);
+                res = bypass(this->grid, cells, *start, -1, k, env.dangerlevel);
                 if (res.empty()) {
-                    res = bypass(this->grid, cells, start->cell, 1, k, env.dangerlevel);
+                    res = bypass(this->grid, cells, *start, 1, k, env.dangerlevel);
                 }
             }
 
@@ -317,15 +321,15 @@ bool GeneticAlgorithm::invalid_refiner(Individ& ind) {
                 return false;
             }
 
-            auto end_erase = cells[res.back().cell];
+            auto end_erase = cells[res.back()];
             for (auto i = it; i != end_erase; ++i) {
-                cells.erase(i->cell);
+                cells.erase(*i);
             }
             it = ind.path.erase(it, end_erase);
             res.pop_back();
             ind.path.splice(it, res);
         }
-        cells.erase(it->cell);
+        cells.erase(*it);
     }
 
     initialize_length_and_danger(ind);
@@ -344,38 +348,38 @@ void GeneticAlgorithm::danger_refiner(Individ& ind) {
     auto start = std::next(ind.path.begin(), st);
     auto end = std::next(ind.path.begin(), fn);
 
-    int k = std::max(grid.getCellDanger(start->cell.first, start->cell.second), grid.getCellDanger(end->cell.first, end->cell.second));
+    int k = std::max(grid.getCellDanger(*start), grid.getCellDanger(*end));
     
     if (k == env.dangerlevel - 1) {
         return;
     }
 
-    std::unordered_map<std::pair<int, int>, std::list<GeneticNode>::iterator, HashCoordinate> cells{10, HashCoordinate(grid.getMapHeight())};
+    std::unordered_map<Cell, std::list<GeneticNode>::iterator, HashCoordinate> cells{10, HashCoordinate(grid.getMapHeight())};
 
     for (auto cur = end; cur != start; --cur) {
-        cells[cur->cell] = cur;
+        cells[*cur] = cur;
     }
 
     for (auto it = std::next(start); it != end; ++it) {
-        if (grid.getCellDanger(it->cell.first, it->cell.second) > k) {
+        if (grid.getCellDanger(*it) > k) {
             auto pr = std::prev(it);
-            int dir = get_direction(pr->cell, it->cell);
+            int dir = get_direction(*pr, *it);
             int turn = at_random(0.5) ? 1 : -1;
-            std::list<GeneticNode> res = bypass(this->grid, cells, pr->cell, turn, dir, k);
+            std::list<GeneticNode> res = bypass(this->grid, cells, *pr, turn, dir, k);
             if (res.empty()) {
                 return;
             }
 
-            auto end_erase = cells[res.back().cell];
+            auto end_erase = cells[res.back()];
             for (auto i = it; i != end_erase; ++i) {
-                cells.erase(i->cell);
+                cells.erase(*i);
             }
 
             it = ind.path.erase(it, end_erase);
             res.pop_back();
             ind.path.splice(end_erase, res);
         }
-        cells.erase(it->cell);
+        cells.erase(*it);
     }
 
     initialize_length_and_danger(ind);
@@ -398,19 +402,11 @@ int GeneticAlgorithm::Individ::get_crossed_obstacles() const {
     return cross_obstacles;
 }
 
-std::list<Node> GeneticAlgorithm::get_result(const Individ& ind) const {
-    std::list<Node> res;
-    res.emplace_back(ind.path.front().cell.first, ind.path.front().cell.second, 0, 0, 0, nullptr);
+std::list<Cell> GeneticAlgorithm::get_result(const Individ& ind) const {
+    std::list<Cell> res;
+    res.push_back(ind.path.front());
     for (auto it = std::next(ind.path.begin()); it != ind.path.end(); ++it) {
-        Node node{
-            it->cell.first,
-            it->cell.second, 
-            0, 
-            res.back().g1 + length_between_adjecent_cells(it->cell, {res.back().i, res.back().j}),
-            res.back().g2 + grid.getCellDanger(it->cell.first, it->cell.second),
-            &res.back()
-        };
-        res.push_back(node);
+        res.push_back(*it);
     }
     return res;
 }
@@ -559,12 +555,9 @@ SearchResult GeneticAlgorithm::startSearch(ILogger *, const Map &, const Environ
 
     
     for (auto& ind : generation) {
-        sresult.lppaths.push_back(get_result(ind));
-        sresult.hppaths.push_back(make_secondary_path(sresult.lppaths.back()));
-        sresult.pathlength.push_back(ind.get_path_length());
+        auto res = get_result(ind);
+        sresult.paths.push_back({res, make_secondary_path(res), ind.get_path_length(), ind.get_path_danger()});
     }
-
-    sresult.pathfound = !sresult.lppaths.empty();
 
     sresult.nodescreated = 0;
     sresult.numberofsteps = 0;

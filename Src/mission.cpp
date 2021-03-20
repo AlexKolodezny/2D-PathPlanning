@@ -66,13 +66,13 @@ void Mission::startSearch()
 void Mission::printSearchResultsToConsole()
 {
     std::cout << "Path ";
-    if (!sr.pathfound)
+    if (sr.paths.empty())
         std::cout << "NOT ";
     std::cout << "found!" << std::endl;
     std::cout << "numberofsteps=" << sr.numberofsteps << std::endl;
     std::cout << "nodescreated=" << sr.nodescreated << std::endl;
-    if (sr.pathfound) {
-        std::cout << "numberofpaths=" << sr.pathlength.size() << std::endl;
+    if (!sr.paths.empty()) {
+        std::cout << "numberofpaths=" << sr.paths.size() << std::endl;
     }
     std::cout << "time=" << sr.time << std::endl;
 }
@@ -80,8 +80,8 @@ void Mission::printSearchResultsToConsole()
 void Mission::saveSearchResultsToLog()
 {
     logger->writeToLogSummary(sr.numberofsteps, sr.nodescreated, sr.time);
-    if (sr.pathfound) {
-        logger->writeToLogPaths(map, sr.lppaths, sr.hppaths);
+    if (!sr.paths.empty()) {
+        logger->writeToLogPaths(map, sr.paths);
     } else
         logger->writeToLogNotFound();
     logger->saveLog();

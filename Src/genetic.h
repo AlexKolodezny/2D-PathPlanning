@@ -6,11 +6,11 @@
 #include "searchresult.h"
 #include "environmentoptions.h"
 #include "ilogger.h"
+#include "cell.h"
 #include <random>
 #include <optional>
 
-struct GeneticNode {
-    std::pair<int, int> cell;
+struct GeneticNode : Cell {
 };
 
 class GeneticAlgorithm : public Search
@@ -30,7 +30,7 @@ private:
     void remove_cycles(Individ& ind) const;
     bool invalid_refiner(Individ& ind);
     std::optional<std::pair<Individ, Individ>> crossover(const Individ& parent1, const Individ& parent2);
-    std::list<Node> get_result(const Individ& ind) const;
+    std::list<Cell> get_result(const Individ& ind) const;
 
     std::list<GeneticNode> line_path(std::pair<int, int> start, std::pair<int, int> end);
     std::list<GeneticNode> random_path(std::pair<int, int> start, std::pair<int, int> end);
@@ -70,7 +70,7 @@ public:
         friend void GeneticAlgorithm::remove_cycles(Individ& ind) const;
         friend bool GeneticAlgorithm::invalid_refiner(Individ& ind);
         friend std::optional<std::pair<Individ, Individ>> GeneticAlgorithm::crossover(const Individ&, const Individ&);
-        friend std::list<Node> GeneticAlgorithm::get_result(const Individ& ind) const;
+        friend std::list<Cell> GeneticAlgorithm::get_result(const Individ& ind) const;
     };
 
     public:
