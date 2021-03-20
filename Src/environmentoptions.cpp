@@ -94,7 +94,7 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
                   << CNS_SP_ST_ASTAR << "', " << CNS_SP_ST_BOASTAR << "', '" CNS_SP_ST_GAMOPP << "'." << std::endl;
         return false;
     }
-    if (value == CNS_SP_ST_ASTAR || value == CNS_SP_ST_BOASTAR) {
+    if (this->algorithm == CN_SP_ST_ASTAR || this->algorithm == CN_SP_ST_BOASTAR) {
         element = algorithm->FirstChildElement(CNS_TAG_MT);
         if (!element) {
             std::cout << "Warning! No '" << CNS_TAG_MT << "' tag found in XML file." << std::endl;
@@ -117,7 +117,7 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
         }
 
     }
-    if (value == CNS_SP_ST_GAMOPP || value == CNS_SP_ST_BOASTAR) {
+    if (this->algorithm == CN_SP_ST_GAMOPP || this->algorithm == CN_SP_ST_BOASTAR) {
         element = algorithm->FirstChildElement(CNS_TAG_DL);
         if (!element) {
             std::cout << "Warning! No '" << CNS_TAG_DL << "' tag found in algorithm section." << std::endl;
@@ -130,9 +130,9 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
             stream.clear();
 
             if (dangerlevel < 0) {
-                std::cout << "Warning! Value of '" << CNS_TAG_DL << "' tag is not correctly specified. Should be >= 1."
+                std::cout << "Warning! Value of '" << CNS_TAG_DL << "' tag is not correctly specified. Should be >= 0."
                         << std::endl;
-                std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 1." << std::endl;
+                std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 0." << std::endl;
                 dangerlevel = 0;
             }
         }
