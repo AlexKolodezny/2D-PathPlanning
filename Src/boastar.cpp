@@ -5,6 +5,7 @@
 #include <map>
 #include <unordered_map>
 #include "search.h"
+#include "path_utils.h"
 
 BOAstarSearch::BOAstarSearch()
 {
@@ -67,16 +68,6 @@ public:
     ManhattanEuristic(std::pair<int, int> goal, double w): Heuristic(w), x(goal.first), y(goal.second) {}
     double metric(int i, int j) const override {
         return (abs(i - x) + abs(j - y));
-    }
-};
-
-class HashCoordinate {
-    int map_width;
-public:
-    HashCoordinate(int width): map_width(width) {}
-
-    int operator()(std::pair<int, int> coor) const {
-        return std::hash<int>()(coor.first * map_width + coor.second);
     }
 };
 
@@ -209,32 +200,6 @@ public:
         return nxt;
     }
 };
-
-//make hppath from lppath
-std::list<Node> make_secondary_path(const std::list<Node>& path) {
-    std::list<Node> res;
-    if (path.empty()) {
-        return res;
-    }
-    res.push_back(path.front());
-    if (path.size() == 1) {
-        return res;
-    }
-    auto cur = *next(path.begin());
-    auto prev = res.back();
-    for (auto it = next(path.begin(), 2); it != path.end(); ++it) {
-        if (it->i - cur.i == cur.i - prev.i && it->j - cur.j == cur.j - prev.j) {
-            prev = cur;
-            cur = *it;
-        } else {
-            res.push_back(cur);
-            prev = cur;
-            cur = *it;
-        }
-    }
-    res.push_back(cur);
-    return res;
-}
 
 std::list<Node> make_primary_path(Node *end) {
     std::list<Node> path;

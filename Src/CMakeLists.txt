@@ -9,6 +9,7 @@ set(HEADERS         config.h
                     search.h
                     boastar.h
                     genetic.h
+                    path_utils.h
                     searchresult.h
                     tinyxml2.h
                     xmllogger.h)
@@ -18,6 +19,7 @@ set(SOURCES         config.cpp
                     map.cpp
                     genetic.cpp
                     mission.cpp
+                    path_utils.cpp
                     boastar.cpp
                     tinyxml2.cpp
                     xmllogger.cpp)

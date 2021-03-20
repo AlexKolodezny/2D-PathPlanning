@@ -48,7 +48,7 @@ void Mission::createSearch()
 {
     map.setDistanceMap(options.dangerlevel);
     if (options.algorithm == CN_SP_ST_GAMOPP) {
-        search = std::unique_ptr<Search>(new GeneticAlgorithm());
+        search = std::unique_ptr<Search>(new GeneticAlgorithm(map, options));
     } else {
         search = std::unique_ptr<Search>(new BOAstarSearch());
     }
