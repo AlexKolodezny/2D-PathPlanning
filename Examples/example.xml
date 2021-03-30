@@ -37,16 +37,14 @@
         </grid>
     </map>
     <algorithm>
-        <searchtype>boastar</searchtype>
+        <searchtype>gamopp</searchtype>
         <metrictype>diagonal</metrictype>
-        <hweight>1</hweight>
-        <dangerlevel>3</dangerlevel>
-        <allowdiagonal>true</allowdiagonal>
-        <cutcorners>true</cutcorners>
-        <allowsqueeze>true</allowsqueeze>
+        <allowdiagonal>false</allowdiagonal>
+        <cutcorners>false</cutcorners>
+        <allowsqueeze>false</allowsqueeze>
     </algorithm>
     <options>
-        <loglevel>1.5</loglevel>
+        <loglevel>2</loglevel>
         <logpath />
         <logfilename />
     </options>
