@@ -221,3 +221,17 @@ void XmlLogger::writeToLogPathSummary(XMLElement *node, float length, float dang
     node->SetAttribute(CNS_TAG_ATTR_DANGER, danger);
     return;
 }
+
+void XmlLogger::writeToLogGeneration(const Map& map, const std::vector<Solution>& sol) {
+    if (loglevel != CN_LP_LEVEL_FULL_WORD) {
+        return;
+    }
+    XMLElement *log_tag = doc.FirstChildElement(CNS_TAG_ROOT)->LastChildElement(CNS_TAG_LOG);
+    auto generation_tag = log_tag->InsertEndChild(doc.NewElement(CNS_TAG_GENERATION))->ToElement();
+    for (auto& s : sol) {
+        XMLElement *node = generation_tag->InsertEndChild(doc.NewElement(CNS_TAG_ITEM))->ToElement();
+        writeToLogPathSummary(node, s.length, s.danger, map.getCellSize());
+        writeToLogPath(node, s.lppath);
+    }
+    return;
+}

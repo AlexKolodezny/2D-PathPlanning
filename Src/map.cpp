@@ -319,13 +319,9 @@ bool Map::setMap(const char *FileName)
     return true;
 }
 
-bool Map::setDistanceMap(int max) {
+bool Map::setDistanceMap() {
     if (!Grid) {
         std::cerr << "Error! There is not grid yet\n";
-        return false;
-    }
-    if (max < 0) {
-        std::cerr << "Error! Max dangerous must be greater or equal than zero\n";
         return false;
     }
     distance_map = new int*[height];
@@ -339,7 +335,7 @@ bool Map::setDistanceMap(int max) {
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
             if (Grid[i][j]) {
-                distance_map[i][j] = max + 1;
+                distance_map[i][j] = 0;
                 q.push({i, j});
             }
         }
@@ -357,7 +353,7 @@ bool Map::setDistanceMap(int max) {
                 continue;
             }
             if (distance_map[u.first][u.second] == -1) {
-                distance_map[u.first][u.second] = std::max(distance_map[v.first][v.second] - 1, 0);
+                distance_map[u.first][u.second] = distance_map[v.first][v.second] + 1;
                 q.push(u);
             }
         }

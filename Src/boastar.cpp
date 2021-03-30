@@ -9,10 +9,7 @@
 #include "node.h"
 #include <cmath>
 
-BOAstarSearch::BOAstarSearch()
-{
-//set defaults here
-}
+BOAstarSearch::BOAstarSearch(std::unique_ptr<DangerObjective>&& obj): obj(std::move(obj)) {}
 
 BOAstarSearch::~BOAstarSearch() {}
 
@@ -166,6 +163,7 @@ class Expansion {
     const Map& map;
     const EnvironmentOptions& op;
     const Heuristic& h;
+    const DangerObjective& obj;
     const Cell diff[10]{
         {1, -1},
         {1, 0},
@@ -180,7 +178,7 @@ class Expansion {
     };
     const double dl[10]{sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1.};
 public:
-    Expansion(const Map& m, const EnvironmentOptions& op, const Heuristic& h): map(m), op(op), h(h) {}
+    Expansion(const Map& m, const EnvironmentOptions& op, const Heuristic& h, const DangerObjective& obj): map(m), op(op), h(h), obj(obj) {}
 
     size_t size() const {
         return 8;
@@ -210,7 +208,7 @@ public:
             cur + diff[k],
             h(cur + diff[k]), 
             cur.g1 + dl[k], 
-            cur.g2 + map.getCellDanger(cur + diff[k]),
+            cur.g2 + obj(map.getCellDanger(cur + diff[k])),
             &cur};
         return nxt;
     }
@@ -255,7 +253,7 @@ SearchResult BOAstarSearch::startSearch(ILogger *, const Map &map, const Environ
             break;
         }
     }
-    Expansion expansion{map, options, *h};
+    Expansion expansion{map, options, *h, *obj};
 
     open.insert_node({
         map.getStartNode(),

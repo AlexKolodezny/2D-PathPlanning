@@ -14,6 +14,7 @@ public:
     int     algorithm;
     double  hweight;
     int     dangerlevel;
+    int     dangerobjective;
 
     bool setEnvironmentOptions(const char* FileName);
 };

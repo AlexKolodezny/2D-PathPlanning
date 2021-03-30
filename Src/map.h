@@ -6,8 +6,10 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <memory>
 #include "tinyxml2.h"
 #include "cell.h"
+#include "dangerobjective.h"
 
 //That's the class that stores BOTH grid map data AND start-goal locations.
 //getValue reads the input XML and fills the Map object.
@@ -34,7 +36,7 @@ class Map
         ~Map();
 
         bool setMap(const char *FileName);
-        bool setDistanceMap(int max);
+        bool setDistanceMap();
         bool CellIsTraversable (Cell c) const;
         bool CellOnGrid (Cell c) const;
         bool CellIsObstacle(Cell c) const;

@@ -46,11 +46,21 @@ bool Mission::createEnvironmentOptions()
 
 void Mission::createSearch()
 {
-    map.setDistanceMap(options.dangerlevel);
-    if (options.algorithm == CN_SP_ST_GAMOPP) {
-        search = std::unique_ptr<Search>(new GeneticAlgorithm(map, options));
+    map.setDistanceMap();
+    std::unique_ptr<DangerObjective> obj;
+    if (options.algorithm == CN_SP_ST_ASTAR || options.algorithm == CN_SP_ST_DIJK) {
+        obj = std::make_unique<ZeroDangerObjective>();
+    } else if (options.dangerobjective == CN_SP_DO_LINEAR) {
+        obj = std::make_unique<LinearDangerObjective>(options.dangerlevel);
+    } else if (options.dangerobjective == CN_SP_DO_INVERT) {
+        obj = std::make_unique<InvertDangerObjective>();
     } else {
-        search = std::unique_ptr<Search>(new BOAstarSearch());
+        obj = std::make_unique<ExponentialDangerObjective>();
+    }
+    if (options.algorithm == CN_SP_ST_GAMOPP) {
+        search = std::unique_ptr<Search>(new GeneticAlgorithm(map, options, std::move(obj)));
+    } else {
+        search = std::unique_ptr<Search>(new BOAstarSearch(std::move(obj)));
     }
 }
 

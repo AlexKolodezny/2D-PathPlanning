@@ -1,6 +1,7 @@
 
 set(HEADERS         config.h
                     environmentoptions.h
+                    dangerobjective.h
                     gl_const.h
                     ilogger.h
                     map.h

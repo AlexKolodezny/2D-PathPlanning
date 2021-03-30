@@ -118,22 +118,42 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
 
     }
     if (this->algorithm == CN_SP_ST_GAMOPP || this->algorithm == CN_SP_ST_BOASTAR) {
-        element = algorithm->FirstChildElement(CNS_TAG_DL);
+        element = algorithm->FirstChildElement(CNS_TAG_DO);
         if (!element) {
-            std::cout << "Warning! No '" << CNS_TAG_DL << "' tag found in algorithm section." << std::endl;
-            std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 0" << std::endl;
-            dangerlevel = 0;
+            std::cout << "Warning! No '" << CNS_TAG_DO << "' tag found in algorithm section." << std::endl;
+            std::cout << "Value of '" << CNS_TAG_DO << "' was defined to 'exp'" << std::endl;
+            dangerobjective = CN_SP_DO_EXP;
         } else {
-            stream << element->GetText();
-            stream >> dangerlevel;
-            stream.str("");
-            stream.clear();
-
-            if (dangerlevel < 0) {
-                std::cout << "Warning! Value of '" << CNS_TAG_DL << "' tag is not correctly specified. Should be >= 0."
-                        << std::endl;
-                std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 0." << std::endl;
+            if (element->GetText())
+                value = element->GetText();
+            std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+            if (value == CNS_SP_DO_INVERT) dangerobjective = CN_SP_DO_INVERT;
+            else if (value == CNS_SP_DO_LINEAR) dangerobjective = CN_SP_DO_LINEAR;
+            else if (value == CNS_SP_DO_EXP) dangerobjective = CN_SP_DO_EXP;
+            else {
+                std::cout << "Warning! Value of'" << CNS_TAG_DO << "' is not correctly specified. There is not tag '" << value << "'." << std::endl;
+                std::cout << "Value of '" << CNS_TAG_DO << "' was defined to 'invert'" << std::endl;
+                dangerobjective = CN_SP_DO_INVERT;
+            }
+        }
+        if (dangerobjective == CN_SP_DO_LINEAR) {
+            element = algorithm->FirstChildElement(CNS_TAG_DL);
+            if (!element) {
+                std::cout << "Warning! No '" << CNS_TAG_DL << "' tag found in algorithm section." << std::endl;
+                std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 0" << std::endl;
                 dangerlevel = 0;
+            } else {
+                stream << element->GetText();
+                stream >> dangerlevel;
+                stream.str("");
+                stream.clear();
+
+                if (dangerlevel < 0) {
+                    std::cout << "Warning! Value of '" << CNS_TAG_DL << "' tag is not correctly specified. Should be >= 0."
+                            << std::endl;
+                    std::cout << "Value of '" << CNS_TAG_DL << "' was defined to 0." << std::endl;
+                    dangerlevel = 0;
+                }
             }
         }
 

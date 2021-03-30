@@ -27,6 +27,7 @@ public:
     void writeToLogSummary(unsigned int numberofsteps, unsigned int nodescreated, double time);
 
     void writeToLogPaths(const Map& map, const std::vector<Solution>& sol);
+    void writeToLogGeneration(const Map& map, const std::vector<Solution>&);
 private:
     void writeToLogMap(tinyxml2::XMLElement *node, const Map &Map, const std::list<Cell> &path);
     void writeToLogPath(tinyxml2::XMLElement *node, const std::list<Cell> &path);

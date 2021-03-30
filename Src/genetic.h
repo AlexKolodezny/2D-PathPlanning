@@ -18,6 +18,7 @@ class GeneticAlgorithm : public Search
     const Map& grid;
     std::mt19937 random_generator;
     const EnvironmentOptions& env;
+    std::unique_ptr<DangerObjective> obj;
 
 public:
     class Individ;
@@ -74,7 +75,7 @@ public:
     };
 
     public:
-        GeneticAlgorithm(const Map& grid, const EnvironmentOptions& env);
+        GeneticAlgorithm(const Map& grid, const EnvironmentOptions& env, std::unique_ptr<DangerObjective>&&);
         ~GeneticAlgorithm() override;
         SearchResult startSearch(ILogger *Logger, const Map &Map, const EnvironmentOptions &options) override;
 };

@@ -60,7 +60,7 @@ ax1 = fig.add_subplot(spec[0, 0])
 ax2 = fig.add_subplot(spec[0, 1])
 ax_silder = fig.add_subplot(spec[1, :])
 
-slider = Slider(ax_silder, "Path", 0, 1, valinit = 0)
+slider = Slider(ax_silder, "Path", 0, len(lppaths) - 1, valinit = 0)
 
 cur_num = 0
 grid[lppaths[cur_num][0], lppaths[cur_num][1]] = 2
@@ -75,7 +75,7 @@ ax2.grid()
 def update(val):
     global cur_num
     grid[lppaths[cur_num][0], lppaths[cur_num][1]] = 0
-    cur_num = int(val * (len(lppaths) - 1))
+    cur_num = int(val)
     grid[lppaths[cur_num][0], lppaths[cur_num][1]] = 2
     
     im.set_array(grid)

@@ -22,6 +22,7 @@
         #define CNS_TAG_ST          "searchtype"
         #define CNS_TAG_HW          "hweight"
         #define CNS_TAG_MT          "metrictype"
+        #define CNS_TAG_DO          "dangerobjective"
         #define CNS_TAG_DL          "dangerlevel"
         #define CNS_TAG_AS          "allowsqueeze"
         #define CNS_TAG_AD          "allowdiagonal"
@@ -43,6 +44,7 @@
                 #define CNS_TAG_LPLEVEL     "lplevel"
                 #define CNS_TAG_HPLEVEL     "hplevel"
                     #define CNS_TAG_SECTION "section"
+        #define CNS_TAG_GENERATION  "generation"
         #define CNS_TAG_LOWLEVEL    "lowlevel"
             #define CNS_TAG_STEP    "step"
             #define CNS_TAG_OPEN    "open"
@@ -81,6 +83,15 @@
         #define CN_SP_ST_ASTAR          2
         #define CN_SP_ST_BOASTAR        3
         #define CN_SP_ST_GAMOPP         4
+    
+//Distance objectives
+        #define CNS_SP_DO_LINEAR        "linear"
+        #define CNS_SP_DO_INVERT        "invert"
+        #define CNS_SP_DO_EXP           "exp"
+
+        #define CN_SP_DO_LINEAR         1
+        #define CN_SP_DO_INVERT         2
+        #define CN_SP_DO_EXP            3
 
     #define CN_SP_AD 1 //AllowDiagonal
 

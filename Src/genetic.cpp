@@ -9,6 +9,7 @@
 #include <algorithm>
 #include "cell.h"
 #include "section.h"
+#include <chrono>
 
 Cell diff[4] = {
     {1, 0},
@@ -118,11 +119,11 @@ void GeneticAlgorithm::initialize_length_and_danger(GeneticAlgorithm::Individ& i
 
     for (auto it = ind.path.begin(); it != std::prev(ind.path.end()); ++it) {
         ind.cross_obstacles += grid.CellIsObstacle(*it);
-        ind.danger += grid.getCellDanger(*it);
+        ind.danger += (*obj)(grid.getCellDanger(*it));
         ind.length += length_between_adjecent_cells(*it, *std::next(it));
     }
     Cell end = *std::prev(ind.path.end());
-    ind.danger += grid.getCellDanger(end);
+    ind.danger += (*obj)(grid.getCellDanger(end));
     ind.cross_obstacles += grid.CellIsObstacle(end);
     return;
 }
@@ -257,7 +258,7 @@ void GeneticAlgorithm::remove_cycles(Individ& ind) const {
 }
 
 //bypass is used in invalid_refiner
-std::list<GeneticNode> bypass(const Map& grid, std::unordered_map<Cell, std::list<GeneticNode>::iterator, HashCoordinate> goals, Cell start, int turn, int dir, int max_danger) {
+std::list<GeneticNode> bypass(const Map& grid, std::unordered_map<Cell, std::list<GeneticNode>::iterator, HashCoordinate> goals, Cell start, int turn, int dir, int min_safe) {
     Cell cur = start;
     std::list<GeneticNode> res;
     while (true) {
@@ -268,7 +269,7 @@ std::list<GeneticNode> bypass(const Map& grid, std::unordered_map<Cell, std::lis
             if (!grid.CellOnGrid(next)) {
                 return {};
             }
-            if (!grid.CellIsObstacle(next) && grid.getCellDanger(next) <= max_danger) {
+            if (!grid.CellIsObstacle(next) && grid.getCellDanger(next) >= min_safe) {
                 break;
             }
             dir = (dir + 4 + turn) % 4;
@@ -305,14 +306,14 @@ bool GeneticAlgorithm::invalid_refiner(Individ& ind) {
             std::list<GeneticNode> res;
             
             if (at_random(0.5)) {
-                res = bypass(this->grid, cells, *start, 1, k, env.dangerlevel);
+                res = bypass(this->grid, cells, *start, 1, k, 1);
                 if (res.empty()) {
-                    res = bypass(this->grid, cells, *start, -1, k, env.dangerlevel);
+                    res = bypass(this->grid, cells, *start, -1, k, 1);
                 }
             } else {
-                res = bypass(this->grid, cells, *start, -1, k, env.dangerlevel);
+                res = bypass(this->grid, cells, *start, -1, k, 1);
                 if (res.empty()) {
-                    res = bypass(this->grid, cells, *start, 1, k, env.dangerlevel);
+                    res = bypass(this->grid, cells, *start, 1, k, 1);
                 }
             }
 
@@ -348,9 +349,9 @@ void GeneticAlgorithm::danger_refiner(Individ& ind) {
     auto start = std::next(ind.path.begin(), st);
     auto end = std::next(ind.path.begin(), fn);
 
-    int k = std::max(grid.getCellDanger(*start), grid.getCellDanger(*end));
+    int k = std::min(grid.getCellDanger(*start), grid.getCellDanger(*end));
     
-    if (k == env.dangerlevel - 1) {
+    if (k == 1) {
         return;
     }
 
@@ -360,8 +361,8 @@ void GeneticAlgorithm::danger_refiner(Individ& ind) {
         cells[*cur] = cur;
     }
 
-    for (auto it = std::next(start); it != end; ++it) {
-        if (grid.getCellDanger(*it) > k) {
+    for (auto it = std::next(start); it != std::next(end); ++it) {
+        if (grid.getCellDanger(*it) < k) {
             auto pr = std::prev(it);
             int dir = get_direction(*pr, *it);
             int turn = at_random(0.5) ? 1 : -1;
@@ -474,9 +475,10 @@ GeneticAlgorithm::Individ* GeneticAlgorithm::choose_parent(std::vector<Individ>&
     
 }
 
-GeneticAlgorithm::GeneticAlgorithm(const Map& grid, const EnvironmentOptions& env)
+GeneticAlgorithm::GeneticAlgorithm(const Map& grid, const EnvironmentOptions& env, std::unique_ptr<DangerObjective>&& obj)
     : grid{grid}
-    , env{env} {}
+    , env{env}
+    , obj{std::move(obj)} {}
 
 GeneticAlgorithm::~GeneticAlgorithm() {}
 
@@ -485,12 +487,14 @@ bool GeneticAlgorithm::at_random(double p) {
     return d(random_generator);
 }
 
-SearchResult GeneticAlgorithm::startSearch(ILogger *, const Map &, const EnvironmentOptions &) {
+SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const EnvironmentOptions &) {
+
+    auto start_time = std::chrono::steady_clock::now();
     
     size_t generation_size = 50;
-    size_t epoch_number = 100;
+    size_t epoch_number = 50;
     size_t child_number = 50;
-    size_t k = 50;
+    size_t k = 10;
 
     double p_mutaion = 0.1;
     double p_length_refine = 0.5;
@@ -510,6 +514,13 @@ SearchResult GeneticAlgorithm::startSearch(ILogger *, const Map &, const Environ
     nsga_ii(generation);
 
     for (size_t epoch = 0; epoch < epoch_number; ++epoch) {
+        {
+            std::vector<Solution> sol;
+            for (const auto& ind : generation) {
+                sol.push_back({get_result(ind), {}, ind.get_path_length(), ind.get_path_danger()});
+            }
+            logger->writeToLogGeneration(grid, sol);
+        }
         std::vector<Individ> childs;
         for (size_t i = 0; i < child_number;) {
             auto p1 = choose_parent(generation);
@@ -559,8 +570,13 @@ SearchResult GeneticAlgorithm::startSearch(ILogger *, const Map &, const Environ
         sresult.paths.push_back({res, make_secondary_path(res), ind.get_path_length(), ind.get_path_danger()});
     }
 
+    sresult.time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0;
+
+    std::sort(sresult.paths.begin(), sresult.paths.end(), [](const Solution& a, const Solution& b) {
+        return a.length < b.length;
+    });
+
     sresult.nodescreated = 0;
     sresult.numberofsteps = 0;
-    sresult.time = 0;
     return sresult;
 }
