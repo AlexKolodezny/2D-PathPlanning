@@ -51,22 +51,6 @@ for generation_tag in log_tag.findall("generation"):
             pathy.append(int(node.get("x")))
         items.append((np.asarray(pathx), np.asarray(pathy)))
     generations.append((items, np.array(items_length), np.array(items_danger)))
-        
-items = []
-items_length = []
-items_danger = []
-for item_log in paths.findall("item"):
-    path_summary = item_log.find("pathsummary")
-    items_length.append(float(path_summary.get("length")))
-    items_danger.append(float(path_summary.get("danger")))
-    path_tag = item_log.find("lplevel")
-    pathx = []
-    pathy = []
-    for node in path_tag.findall("node"):
-        pathx.append(int(node.get("y")))
-        pathy.append(int(node.get("x")))
-    items.append((np.asarray(pathx), np.asarray(pathy)))
-generations.append((items, np.array(items_length), np.array(items_danger)))
 
 grid = np.asarray(grid)
 backup_grid = grid.copy()
@@ -110,8 +94,8 @@ def generation_update(val):
     grid[generations[cur_generation][0][cur_num][0], generations[cur_generation][0][cur_num][1]] = backup_grid[generations[cur_generation][0][cur_num][0], generations[cur_generation][0][cur_num][1]]
     cur_generation = int(val)
     cur_num = 0
-    slider.set_val(0)
     slider.valmax = len(generations[cur_generation][0]) - 1
+    slider.set_val(0)
     grid[generations[cur_generation][0][cur_num][0], generations[cur_generation][0][cur_num][1]] = 2
     
     im.set_array(grid)

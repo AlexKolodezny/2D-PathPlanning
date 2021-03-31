@@ -128,10 +128,9 @@ void GeneticAlgorithm::initialize_length_and_danger(GeneticAlgorithm::Individ& i
     return;
 }
 
-GeneticAlgorithm::Individ::Individ(const GeneticAlgorithm& search, const Individ& parent1, std::list<GeneticNode>::const_iterator it1, const Individ& patent2, std::list<GeneticNode>::const_iterator it2) {
+GeneticAlgorithm::Individ::Individ(const Individ& parent1, std::list<GeneticNode>::const_iterator it1, const Individ& patent2, std::list<GeneticNode>::const_iterator it2) {
     path.insert(path.end(), parent1.path.begin(), it1);
     path.insert(path.end(), it2, patent2.path.end());
-    search.initialize_length_and_danger(*this);
 }
 
 GeneticAlgorithm::Individ::Individ(GeneticAlgorithm& search, size_t k): path{} {
@@ -146,8 +145,6 @@ GeneticAlgorithm::Individ::Individ(GeneticAlgorithm& search, size_t k): path{} {
     std::pair<int, int> end = search.grid.getGoalNode();
     path.splice(path.end(), search.line_path(start, end));
     path.push_back({end});
-
-    search.initialize_length_and_danger(*this);
 }
 GeneticAlgorithm::Individ GeneticAlgorithm::Individ::copy() const {
     return *this;
@@ -198,8 +195,8 @@ auto GeneticAlgorithm::crossover(const Individ& parent1, const Individ& parent2)
         }
     }
     return std::make_optional<std::pair<Individ, Individ>>(
-        Individ{*this, parent1, it_this, parent2, it_other},
-        Individ{*this, parent2, it_other, parent1, it_this}
+        Individ{parent1, it_this, parent2, it_other},
+        Individ{parent2, it_other, parent1, it_this}
     );
 }
 
@@ -218,8 +215,6 @@ void GeneticAlgorithm::mutation(Individ& ind) {
     Cell start = *start_erase;
     ind.path.erase(start_erase, end_erase);
     ind.path.splice(end_erase, random_path(start, *end_erase));
-
-    initialize_length_and_danger(ind);
 }
 
 void GeneticAlgorithm::length_refiner(Individ& ind) {
@@ -237,7 +232,6 @@ void GeneticAlgorithm::length_refiner(Individ& ind) {
     Cell start = *start_erase;
     ind.path.erase(start_erase, end_erase);
     ind.path.splice(end_erase, line_path(start, *end_erase));
-    initialize_length_and_danger(ind);
 
 }
 
@@ -253,8 +247,6 @@ void GeneticAlgorithm::remove_cycles(Individ& ind) const {
         }
         cells[*it] = it;
     }
-    
-    initialize_length_and_danger(ind);
 }
 
 //bypass is used in invalid_refiner
@@ -318,7 +310,6 @@ bool GeneticAlgorithm::invalid_refiner(Individ& ind) {
             }
 
             if (res.empty()) {
-                initialize_length_and_danger(ind);
                 return false;
             }
 
@@ -333,7 +324,6 @@ bool GeneticAlgorithm::invalid_refiner(Individ& ind) {
         cells.erase(*it);
     }
 
-    initialize_length_and_danger(ind);
     return true;
 }
 
@@ -383,7 +373,6 @@ void GeneticAlgorithm::danger_refiner(Individ& ind) {
         cells.erase(*it);
     }
 
-    initialize_length_and_danger(ind);
     return;
 }
 
@@ -413,7 +402,7 @@ std::list<Cell> GeneticAlgorithm::get_result(const Individ& ind) const {
 }
 
 //Algorithm NSGA_II, sort the generation
-void GeneticAlgorithm::nsga_ii(std::vector<Individ>& generation) {
+auto GeneticAlgorithm::nsga_ii(std::vector<Individ>&& generation) -> std::vector<std::vector<Individ>> {
     auto part = std::partition(generation.begin(), generation.end(), 
         [](const Individ& a) {return !a.is_invalid();});
     std::sort(generation.begin(), part, 
@@ -422,49 +411,48 @@ void GeneticAlgorithm::nsga_ii(std::vector<Individ>& generation) {
         [](const Individ& a, const Individ& b) {
             return a.get_crossed_obstacles() < b.get_crossed_obstacles();
         });
-    std::vector<std::vector<std::pair<Individ, double>>> fronts;
+    std::vector<std::vector<Individ>> fronts;
     for (auto it = generation.begin(); it != part; ++it) {
         auto front = std::partition_point(fronts.begin(), fronts.end(),
-            [&it](const std::vector<std::pair<Individ, double>>& a) {
-                return a.back().first.get_path_danger() <= it->get_path_danger();
+            [&it](const std::vector<Individ>& a) {
+                return a.back().get_path_danger() <= it->get_path_danger();
             });
         if (front != fronts.end()) {
-            front->emplace_back(std::move(*it), 0);
+            front->push_back(std::move(*it));
         } else {
             fronts.emplace_back();
-            fronts.back().emplace_back(std::move(*it), 0);
+            fronts.back().push_back(std::move(*it));
         }
     }
 
-    auto it = generation.begin();
-
     for (auto& ft : fronts) {
-        double min_length = ft.front().first.get_path_length();
-        double max_length = ft.back().first.get_path_length();
-        double max_danger = ft.front().first.get_path_danger();
-        double min_danger = ft.back().first.get_path_danger();
+        double min_length = ft.front().get_path_length();
+        double max_length = ft.back().get_path_length();
+        double max_danger = ft.front().get_path_danger();
+        double min_danger = ft.back().get_path_danger();
 
         //set first and last elements to be greater than each other
-        ft.front().second = 3;
-        ft.back().second = 3;
+        ft.front().set_crowdness(3);
+        ft.back().set_crowdness(3);
 
         for (size_t i = 1; i + 1 < ft.size(); ++i) {
-            ft[i].second = (ft[i + 1].first.get_path_length() - ft[i - 1].first.get_path_length()) / (max_length - min_length);
-            ft[i].second += (ft[i - 1].first.get_path_danger() - ft[i + 1].first.get_path_danger()) / (max_danger - min_danger);
+            ft[i].set_crowdness(
+                (ft[i + 1].get_path_length() - ft[i - 1].get_path_length()) / (max_length - min_length) + 
+                (ft[i - 1].get_path_danger() - ft[i + 1].get_path_danger()) / (max_danger - min_danger));
         }
 
         std::sort(ft.begin(), ft.end(),
-            [](const std::pair<Individ, double>& a, const std::pair<Individ, double>& b) {
-                return a.second > b.second;
+            [](const Individ& a, Individ& b) {
+                return a.get_crowdness() > b.get_crowdness();
             });
-
-        for (auto& x : ft) {
-            *it = std::move(x.first);
-            ++it;
-        }
     }
 
-    return;
+    fronts.emplace_back();
+    std::move(part, generation.end(), std::back_inserter(fronts.back()));
+
+    generation.clear();
+
+    return fronts;
 }
 
 GeneticAlgorithm::Individ* GeneticAlgorithm::choose_parent(std::vector<Individ>& v) {
@@ -493,7 +481,8 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
     
     size_t generation_size = 50;
     size_t epoch_number = 50;
-    size_t child_number = 50;
+    size_t child_number = 25;
+    size_t parent_remains = 25;
     size_t k = 10;
 
     double p_mutaion = 0.1;
@@ -510,10 +499,17 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
         remove_cycles(x);
     }
 
-
-    nsga_ii(generation);
+    for (auto& x : generation) {
+        initialize_length_and_danger(x);
+    }
 
     for (size_t epoch = 0; epoch < epoch_number; ++epoch) {
+        auto fronts = nsga_ii(std::move(generation));
+        generation.clear();
+
+        for (auto& ft : fronts) {
+            std::move(ft.begin(), ft.end(), std::back_inserter(generation));
+        }
         {
             std::vector<Solution> sol;
             for (const auto& ind : generation) {
@@ -559,13 +555,30 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
         for (auto& c : childs) {
             remove_cycles(c);
         }
+        for (auto& c : childs) {
+            initialize_length_and_danger(c);
+        }
+        // std::move(childs.begin(), childs.end(), std::back_inserter(generation));
+        //generation = std::move(childs);
+        //nsga_ii(generation);
+        //generation.erase(generation.begin() + generation_size, generation.end());
+
+        generation.erase(generation.begin() + parent_remains, generation.end());
         std::move(childs.begin(), childs.end(), std::back_inserter(generation));
-        nsga_ii(generation);
-        generation.erase(generation.begin() + generation_size, generation.end());
     }
 
+    auto fronts = nsga_ii(std::move(generation));
+    {
+        std::vector<Solution> sol;
+        for (const auto& ft : fronts) {
+            for (const auto& ind : ft) {
+                sol.push_back({get_result(ind), {}, ind.get_path_length(), ind.get_path_danger()});
+            }
+        }
+        logger->writeToLogGeneration(grid, sol);
+    }
     
-    for (auto& ind : generation) {
+    for (auto& ind : fronts[0]) {
         auto res = get_result(ind);
         sresult.paths.push_back({res, make_secondary_path(res), ind.get_path_length(), ind.get_path_danger()});
     }

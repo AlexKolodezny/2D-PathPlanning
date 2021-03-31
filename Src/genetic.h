@@ -37,7 +37,7 @@ private:
     std::list<GeneticNode> random_path(std::pair<int, int> start, std::pair<int, int> end);
 
     Individ* choose_parent(std::vector<Individ>& generation);
-    void nsga_ii(std::vector<Individ>&);
+    std::vector<std::vector<Individ>> nsga_ii(std::vector<Individ>&&);
     bool at_random(double p);
 
 public:
@@ -46,8 +46,9 @@ public:
         double length;
         double danger;
         int cross_obstacles;
+        double crowdness;
 
-        Individ(const GeneticAlgorithm& search, const Individ& parent1, std::list<GeneticNode>::const_iterator it1, const Individ& patent2, std::list<GeneticNode>::const_iterator it2);
+        Individ(const Individ& parent1, std::list<GeneticNode>::const_iterator it1, const Individ& patent2, std::list<GeneticNode>::const_iterator it2);
 
         Individ& operator=(const Individ&) = default;
         Individ(const Individ&) = default;
@@ -58,6 +59,14 @@ public:
         Individ& operator=(Individ&&) = default;
 
         Individ copy() const;
+
+        inline void set_crowdness(double x) {
+            crowdness = x;
+            return;
+        }
+        inline double get_crowdness() const {
+            return crowdness;
+        }
 
         double get_path_length() const;
         double get_path_danger() const;
