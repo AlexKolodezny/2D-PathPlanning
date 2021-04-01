@@ -161,9 +161,9 @@ auto GeneticAlgorithm::crossover(const Individ& parent1, const Individ& parent2)
     size_t other_gap_from_end = 1;
 
     auto this_search_start = std::next(parent1.path.begin(), this_gap_from_start);
-    auto this_search_end = std::prev(parent1.path.begin(), this_gap_from_end);
+    auto this_search_end = std::prev(parent1.path.end(), this_gap_from_end + 1);
     auto other_search_start = std::next(parent2.path.begin(), other_gap_from_start);
-    auto other_search_end = std::prev(parent2.path.begin(), other_gap_from_end);
+    auto other_search_end = std::prev(parent2.path.end(), other_gap_from_end + 1);
 
     if (this_gap_from_start + this_gap_from_end >= parent1.path.size() || other_gap_from_end + other_gap_from_start > parent2.path.size()) {
         return {};
