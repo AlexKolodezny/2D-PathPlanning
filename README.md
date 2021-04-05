@@ -57,7 +57,7 @@ Bin/Release/Alexander_Kolodezny_ASearch Example/example.xml
     * diagonal - диагональная метрика  
     <img src="https://render.githubusercontent.com/render/math?math=\rho((x_1, y_1), (x_2, y_2)) = min(|x_1 - x_2|, |y_1 - y_2|) %2B ||x_2 - x_1| - |y_2 - y_1||">
 
-    * manhatten - манхэтоновское расстояние  
+    * manhattan - манхэтоновское расстояние  
     <img src="https://render.githubusercontent.com/render/math?math=\rho((x_1, y_1), (x_2, y_2)) = |x_2 - x_1| %2B |y_2 - y_1|">
     
     * euclidian - евклидово расстояние  

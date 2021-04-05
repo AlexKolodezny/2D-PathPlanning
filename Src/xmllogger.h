@@ -24,7 +24,7 @@ public:
     //void writeToLogOpenClose(const typename &open, const typename &close);
     void writeToLogNotFound();
 
-    void writeToLogSummary(unsigned int numberofsteps, unsigned int nodescreated, double time);
+    void writeToLogSummary(unsigned int numberofpaths, unsigned int numberofsteps, unsigned int nodescreated, double time);
 
     void writeToLogPaths(const Map& map, const std::vector<Solution>& sol);
     void writeToLogGeneration(const Map& map, const std::vector<Solution>&);

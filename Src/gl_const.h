@@ -54,6 +54,7 @@
 //XML tags' attributes
     #define CNS_TAG_ATTR_NUMOFSTEPS     "numberofsteps"
     #define CNS_TAG_ATTR_NODESCREATED   "nodescreated"
+    #define CNS_TAG_ATTR_NUMOFPATHS     "numberofpaths"
     #define CNS_TAG_ATTR_LENGTH         "length"
     #define CNS_TAG_ATTR_DANGER         "danger"
     #define CNS_TAG_ATTR_LENGTH_SCALED  "length_scaled"

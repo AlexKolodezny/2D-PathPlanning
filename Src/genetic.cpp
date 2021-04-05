@@ -485,7 +485,7 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
     size_t parent_remains = 25;
     size_t k = 10;
 
-    double p_mutaion = 0.1;
+    double p_mutaion = 0.5;
     double p_length_refine = 0.5;
     double p_danger_refine = 0.5;
 

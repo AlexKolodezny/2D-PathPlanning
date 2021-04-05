@@ -15,7 +15,7 @@ class ILogger
         //virtual void writeToLogOpenClose(const typename &open, const typename &close) = 0;
         virtual void writeToLogPaths(const Map&, const std::vector<Solution>&) = 0;
         virtual void writeToLogNotFound() = 0;
-        virtual void writeToLogSummary(unsigned int numberofsteps, unsigned int nodescreated, double time) = 0;
+        virtual void writeToLogSummary(unsigned int numberofpaths, unsigned int numberofsteps, unsigned int nodescreated, double time) = 0;
         virtual void writeToLogGeneration(const Map&, const std::vector<Solution>&) = 0;
         virtual ~ILogger() {};
     protected:

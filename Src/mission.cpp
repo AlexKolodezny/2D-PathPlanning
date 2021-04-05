@@ -89,7 +89,7 @@ void Mission::printSearchResultsToConsole()
 
 void Mission::saveSearchResultsToLog()
 {
-    logger->writeToLogSummary(sr.numberofsteps, sr.nodescreated, sr.time);
+    logger->writeToLogSummary(sr.paths.size(), sr.numberofsteps, sr.nodescreated, sr.time);
     if (!sr.paths.empty()) {
         logger->writeToLogPaths(map, sr.paths);
     } else

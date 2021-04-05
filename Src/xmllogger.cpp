@@ -174,7 +174,7 @@ void XmlLogger::writeToLogHPath(tinyxml2::XMLElement *node, const std::list<Sect
     }
 }
 
-void XmlLogger::writeToLogSummary(unsigned int numberofsteps, unsigned int nodescreated, double time)
+void XmlLogger::writeToLogSummary(unsigned int numberofpaths, unsigned int numberofsteps, unsigned int nodescreated, double time)
 {
     if (loglevel == CN_LP_LEVEL_NOPE_WORD)
         return;
@@ -182,6 +182,7 @@ void XmlLogger::writeToLogSummary(unsigned int numberofsteps, unsigned int nodes
     XMLElement *summary = doc.FirstChildElement(CNS_TAG_ROOT);
     summary = summary->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_SUM);
     XMLElement *element = summary->ToElement();
+    element->SetAttribute(CNS_TAG_ATTR_NUMOFPATHS, numberofpaths);
     element->SetAttribute(CNS_TAG_ATTR_NUMOFSTEPS, numberofsteps);
     element->SetAttribute(CNS_TAG_ATTR_NODESCREATED, nodescreated);
     element->SetAttribute(CNS_TAG_ATTR_TIME, std::to_string(time).c_str());
