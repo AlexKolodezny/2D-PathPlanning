@@ -8,6 +8,7 @@
 #include "section.h"
 #include "node.h"
 #include <cmath>
+#include <queue>
 
 BOAstarSearch::BOAstarSearch(std::unique_ptr<DangerObjective>&& obj): obj(std::move(obj)) {}
 
@@ -74,37 +75,37 @@ public:
     }
 };
 
-class OpenContainerTreeCompare {
+class OpenContainerHeapCompare {
 public:
-    bool operator()(std::pair<double, double> x, std::pair<double, double> y) {
-        if (x.first == y.first) {
-            return x.second < y.second;
-        }
-        return x.first < y.first;
+    bool operator()(std::pair<std::pair<double, double>, Node> x, std::pair<std::pair<double, double>, Node> y) {
+        return x.first > y.first;
     }
 };
 
 class OpenContainer {
-    std::multimap<std::pair<double, double>, Node> tree;
+    std::priority_queue<
+        std::pair<std::pair<double, double>, Node>,
+        std::vector<std::pair<std::pair<double, double>, Node>>,
+        OpenContainerHeapCompare> heap;
 public:
-    OpenContainer(): tree() {}
+    OpenContainer(): heap() {}
 
     bool empty() const {
-        return tree.empty();
+        return heap.empty();
     }
 
     size_t size() const {
-        return tree.size();
+        return heap.size();
     }
 
     Node extract_min() {
-        Node res = tree.begin()->second;
-        tree.erase(tree.begin());
+        Node res = heap.top().second;
+        heap.pop();
         return res;
     }
 
     void insert_node(Node node) {
-        tree.insert({{node.f1, node.f2}, node});
+        heap.push({{node.f1, node.f2}, node});
         return;
     }
 };
