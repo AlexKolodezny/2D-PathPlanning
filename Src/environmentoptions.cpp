@@ -5,27 +5,21 @@
 #include <algorithm>
 #include "tinyxml2.h"
 
-EnvironmentOptions::EnvironmentOptions()
-{
-    algorithm = CN_SP_ST_ASTAR;
-    hweight = 1.;
-    metrictype = CN_SP_MT_EUCL;
-    allowsqueeze = false;
-    allowdiagonal = true;
-    cutcorners = false;
-    dangerlevel = 0;
-}
+EnvironmentOptions::EnvironmentOptions():
+    allowdiagonal{false},
+    cutcorners{false},
+    allowsqueeze{false},
+    dangerobjective{CN_SP_DO_EXP},
+    dangerlevel{0},
+    algorithm_options{std::make_unique<BOAstarAlgorithmOptions>()} {}
 
-EnvironmentOptions::EnvironmentOptions(bool AS, bool AD, bool CC, int MT, int AL, double HW, int DL)
-{
-    algorithm = AL;
-    hweight = HW;
-    metrictype = MT;
-    allowsqueeze = AS;
-    allowdiagonal = AD;
-    cutcorners = CC;
-    dangerlevel = DL;
-}
+EnvironmentOptions::EnvironmentOptions(bool AD, bool CC, bool AS, int DO,int DL):
+    allowdiagonal{AD},
+    cutcorners{CC},
+    allowsqueeze{AS},
+    dangerobjective{DO},
+    dangerlevel{DL},
+    algorithm_options{} {}
 
 bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
 {
@@ -61,32 +55,13 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
     std::transform(value.begin(), value.end(), value.begin(), ::tolower);
 
     if (value == CNS_SP_ST_DIJK) {
-        this->algorithm = CN_SP_ST_DIJK;
+        algorithm_options = std::make_unique<BOAstarAlgorithmOptions>(CN_SP_ST_DIJK);
     } else if (value == CNS_SP_ST_ASTAR) {
-        this->algorithm = CN_SP_ST_ASTAR;
-        element = algorithm->FirstChildElement(CNS_TAG_HW);
-        if (!element) {
-            std::cout << "Warning! No '" << CNS_TAG_HW << "' tag found in algorithm section." << std::endl;
-            std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
-            hweight = 1;
-        }
-        else {
-            stream << element->GetText();
-            stream >> hweight;
-            stream.str("");
-            stream.clear();
-
-            if (hweight < 1) {
-                std::cout << "Warning! Value of '" << CNS_TAG_HW << "' tag is not correctly specified. Should be >= 1."
-                        << std::endl;
-                std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
-                hweight = 1;
-            }
-        }
+        algorithm_options = std::make_unique<BOAstarAlgorithmOptions>(CN_SP_ST_ASTAR);
     } else if (value == CNS_SP_ST_BOASTAR) {
-        this->algorithm = CN_SP_ST_BOASTAR;
+        algorithm_options = std::make_unique<BOAstarAlgorithmOptions>(CN_SP_ST_BOASTAR);
     } else if (value == CNS_SP_ST_GAMOPP) {
-        this->algorithm = CN_SP_ST_GAMOPP;
+        algorithm_options = std::make_unique<GeneticAlgorithmOptions>();
     } else {
         std::cout << "Error! Value of '" << CNS_TAG_ST << "' tag (algorithm name) is not correctly specified."
                   << std::endl;
@@ -94,30 +69,50 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
                   << CNS_SP_ST_ASTAR << "', " << CNS_SP_ST_BOASTAR << "', '" CNS_SP_ST_GAMOPP << "'." << std::endl;
         return false;
     }
-    if (this->algorithm == CN_SP_ST_ASTAR || this->algorithm == CN_SP_ST_BOASTAR) {
+    if (algorithm_options->algorithm == CN_SP_ST_ASTAR || algorithm_options->algorithm == CN_SP_ST_BOASTAR) {
+        BOAstarAlgorithmOptions *boastar_algorithm_options = dynamic_cast<BOAstarAlgorithmOptions*>(algorithm_options.get());
         element = algorithm->FirstChildElement(CNS_TAG_MT);
         if (!element) {
             std::cout << "Warning! No '" << CNS_TAG_MT << "' tag found in XML file." << std::endl;
             std::cout << "Value of '" << CNS_TAG_MT << "' was defined to 'euclidean'." << std::endl;
-            metrictype = CN_SP_MT_EUCL;
+            boastar_algorithm_options->metrictype = CN_SP_MT_EUCL;
         }
         else {
             if (element->GetText())
                 value = element->GetText();
             std::transform(value.begin(), value.end(), value.begin(), ::tolower);
-            if (value == CNS_SP_MT_MANH) metrictype = CN_SP_MT_MANH;
-            else if (value == CNS_SP_MT_EUCL) metrictype = CN_SP_MT_EUCL;
-            else if (value == CNS_SP_MT_DIAG) metrictype = CN_SP_MT_DIAG;
-            else if (value == CNS_SP_MT_CHEB) metrictype = CN_SP_MT_CHEB;
+            if (value == CNS_SP_MT_MANH) boastar_algorithm_options->metrictype = CN_SP_MT_MANH;
+            else if (value == CNS_SP_MT_EUCL) boastar_algorithm_options->metrictype = CN_SP_MT_EUCL;
+            else if (value == CNS_SP_MT_DIAG) boastar_algorithm_options->metrictype = CN_SP_MT_DIAG;
+            else if (value == CNS_SP_MT_CHEB) boastar_algorithm_options->metrictype = CN_SP_MT_CHEB;
             else {
                 std::cout << "Warning! Value of'" << CNS_TAG_MT << "' is not correctly specified. There is not tag '" << value << "'." << std::endl;
                 std::cout << "Value of '" << CNS_TAG_MT << "' was defined to 'euclidean'" << std::endl;
-                metrictype = CN_SP_MT_EUCL;
+                boastar_algorithm_options->metrictype = CN_SP_MT_EUCL;
+            }
+        }
+        element = algorithm->FirstChildElement(CNS_TAG_HW);
+        if (!element) {
+            std::cout << "Warning! No '" << CNS_TAG_HW << "' tag found in algorithm section." << std::endl;
+            std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
+            boastar_algorithm_options->hweight = 1;
+        }
+        else {
+            stream << element->GetText();
+            stream >> boastar_algorithm_options->hweight;
+            stream.str("");
+            stream.clear();
+
+            if (boastar_algorithm_options->hweight < 1) {
+                std::cout << "Warning! Value of '" << CNS_TAG_HW << "' tag is not correctly specified. Should be >= 1."
+                        << std::endl;
+                std::cout << "Value of '" << CNS_TAG_HW << "' was defined to 1." << std::endl;
+                boastar_algorithm_options->hweight = 1;
             }
         }
 
     }
-    if (this->algorithm == CN_SP_ST_GAMOPP || this->algorithm == CN_SP_ST_BOASTAR) {
+    if (algorithm_options->algorithm == CN_SP_ST_GAMOPP || algorithm_options->algorithm == CN_SP_ST_BOASTAR) {
         element = algorithm->FirstChildElement(CNS_TAG_DO);
         if (!element) {
             std::cout << "Warning! No '" << CNS_TAG_DO << "' tag found in algorithm section." << std::endl;
@@ -158,6 +153,66 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
         }
 
     }
+    if (algorithm_options->algorithm == CN_SP_ST_GAMOPP) {
+        GeneticAlgorithmOptions *genetic_algorithm_options = dynamic_cast<GeneticAlgorithmOptions*>(algorithm_options.get());
+        element = algorithm->FirstChildElement(CNS_TAG_GT_EN);
+        if (!element) {
+            std::cout << "Warning! No '" << CNS_TAG_GT_EN << "' tag found in algorithm section." << std::endl;
+            std::cout << "Value of '" << CNS_TAG_GT_EN << "' was defined to 50" << std::endl;
+            genetic_algorithm_options->epoch_number = 50;
+        } else {
+            stream << element->GetText();
+            stream >> genetic_algorithm_options->epoch_number;
+            stream.str("");
+            stream.clear();
+
+            if (genetic_algorithm_options->epoch_number < 0) {
+                std::cout << "Warning! Value of '" << CNS_TAG_GT_EN << "' tag is not correctly specified. Should be >= 0."
+                        << std::endl;
+                std::cout << "Value of '" << CNS_TAG_GT_EN << "' was defined to 50." << std::endl;
+                genetic_algorithm_options->epoch_number = 50;
+            }
+        }
+        
+        element = algorithm->FirstChildElement(CNS_TAG_GT_PR);
+        if (!element) {
+            std::cout << "Warning! No '" << CNS_TAG_GT_PR << "' tag found in algorithm section." << std::endl;
+            std::cout << "Value of '" << CNS_TAG_GT_PR << "' was defined to 25" << std::endl;
+            genetic_algorithm_options->parents_remain = 25;
+        } else {
+            stream << element->GetText();
+            stream >> genetic_algorithm_options->parents_remain;
+            stream.str("");
+            stream.clear();
+
+            if (genetic_algorithm_options->parents_remain < 0) {
+                std::cout << "Warning! Value of '" << CNS_TAG_GT_PR << "' tag is not correctly specified. Should be >= 0."
+                        << std::endl;
+                std::cout << "Value of '" << CNS_TAG_GT_PR << "' was defined to 25." << std::endl;
+                genetic_algorithm_options->parents_remain = 25;
+            }
+        }
+
+        element = algorithm->FirstChildElement(CNS_TAG_GT_CC);
+        if (!element) {
+            std::cout << "Warning! No '" << CNS_TAG_GT_CC << "' tag found in algorithm section." << std::endl;
+            std::cout << "Value of '" << CNS_TAG_GT_CC << "' was defined to 25" << std::endl;
+            genetic_algorithm_options->child_create = 25;
+        } else {
+            stream << element->GetText();
+            stream >> genetic_algorithm_options->child_create;
+            stream.str("");
+            stream.clear();
+
+            if (genetic_algorithm_options->child_create < 0) {
+                std::cout << "Warning! Value of '" << CNS_TAG_GT_CC << "' tag is not correctly specified. Should be >= 0."
+                        << std::endl;
+                std::cout << "Value of '" << CNS_TAG_GT_CC << "' was defined to 25." << std::endl;
+                genetic_algorithm_options->child_create = 25;
+            }
+        }
+    }
+    
 
 
     element = algorithm->FirstChildElement(CNS_TAG_AD);

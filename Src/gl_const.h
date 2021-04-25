@@ -27,6 +27,9 @@
         #define CNS_TAG_AS          "allowsqueeze"
         #define CNS_TAG_AD          "allowdiagonal"
         #define CNS_TAG_CC          "cutcorners"
+        #define CNS_TAG_GT_CC       "childrencreate"
+        #define CNS_TAG_GT_PR       "parentsremain"
+        #define CNS_TAG_GT_EN       "epochnumber"
 
     #define CNS_TAG_OPT             "options"
         #define CNS_TAG_LOGLVL      "loglevel"

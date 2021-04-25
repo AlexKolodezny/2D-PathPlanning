@@ -475,14 +475,17 @@ bool GeneticAlgorithm::at_random(double p) {
     return d(random_generator);
 }
 
-SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const EnvironmentOptions &) {
+SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const EnvironmentOptions & options) {
 
     auto start_time = std::chrono::steady_clock::now();
+
+    GeneticAlgorithmOptions *genetic_algorithm_options = dynamic_cast<GeneticAlgorithmOptions*>(options.algorithm_options.get());
     
-    size_t generation_size = 50;
-    size_t epoch_number = 50;
-    size_t child_number = 25;
-    size_t parent_remains = 25;
+    size_t epoch_number = genetic_algorithm_options->epoch_number;
+    size_t child_number = genetic_algorithm_options->child_create;
+    size_t parent_remains = genetic_algorithm_options->parents_remain;
+    size_t generation_size = child_number + parent_remains;
+
     size_t k = 10;
 
     double p_mutaion = 0.5;

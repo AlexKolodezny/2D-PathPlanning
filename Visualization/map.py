@@ -27,6 +27,29 @@ for row in grid_tag.findall("row"):
 
 grid = np.asarray(grid)
 
+tag = map_tag.find("startx")
+if tag == None:
+    print("Error! Tag 'startx' not found")
+else:
+    st_x = int(tag.text)
+    tag = map_tag.find("starty")
+    if tag == None:
+        print("Error! Tag 'starty' not found")
+    else:
+        st_y = int(tag.text)
+        tag = map_tag.find("finishx")
+        if tag == None:
+            print("Error! Tag 'finishx' not found")
+        else:
+            fn_x = int(tag.text)
+            tag = map_tag.find("finishy")
+            if tag == None:
+                print("Error! Tag 'finishy' not found")
+            else:
+                fn_y = int(tag.text)
+                grid[st_y][st_x] = 2
+                grid[fn_y][fn_x] = 2
+
 fig = plt.figure(constrained_layout = True)
 spec = fig.add_gridspec(ncols = 1, nrows = 1)
 ax1 = fig.add_subplot(spec[0, 0])

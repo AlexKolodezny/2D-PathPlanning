@@ -51,7 +51,7 @@
     </options>
     <log>
         <mapfilename>Examples/example_boastar.xml</mapfilename>
-        <summary numberofpaths="12" numberofsteps="4388" nodescreated="2763" time="0.002760"/>
+        <summary numberofpaths="12" numberofsteps="4388" nodescreated="2763" time="0.002549"/>
         <paths>
             <item>
                 <pathsummary length="37" length_scaled="888" danger="4.4729695"/>

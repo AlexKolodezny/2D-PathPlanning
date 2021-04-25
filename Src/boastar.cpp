@@ -113,8 +113,9 @@ public:
 class CloseContainer {
     std::list<Node> container;
     std::unordered_map<Cell, double, HashCoordinate> g_min;
+    std::unordered_map<Cell, double, HashCoordinate> g_max;
 public:
-    CloseContainer(HashCoordinate hash): container{}, g_min{10, hash} {}
+    CloseContainer(HashCoordinate hash): container{}, g_min{10, hash}, g_max{10, hash} {}
 
     size_t size() const {
         return container.size();
@@ -128,12 +129,13 @@ public:
         if (g_min.find(node) == g_min.end()) {
             return true;
         }
-        return node.g2 < g_min.at(node);
+        return node.g2 < g_min.at(node) && node.g1 > g_max.at(node);
     }
 
     Node* insert(Node node) {
         container.push_back(node);
         g_min[node] = node.g2;
+        g_max[node] = node.g1;
         return &container.back();
     }
 };
@@ -141,15 +143,17 @@ public:
 class Solves {
     std::vector<Node*> container;
     double g_min;
+    double g_max;
 public:
-    Solves(): container{}, g_min{} {}
+    Solves(): container{}, g_min{}, g_max{} {}
 
     bool is_non_dominated(Node node) const {
-        return container.empty() || node.f2 < g_min;
+        return container.empty() || (node.f2 < g_min && node.f1 > g_max);
     }
 
     void insert_node(Node *node) {
         g_min = node->g2;
+        g_max = node->g1;
         container.push_back(node);
         return;
     }
@@ -233,22 +237,24 @@ SearchResult BOAstarSearch::startSearch(ILogger *, const Map &map, const Environ
     CloseContainer close{HashCoordinate{map.getMapHeight()}};
     Solves solves{};
 
+    BOAstarAlgorithmOptions *boastar_algorithm_options = dynamic_cast<BOAstarAlgorithmOptions*>(options.algorithm_options.get());
+
     std::unique_ptr<Heuristic> h;
-    if (options.algorithm == CN_SP_ST_DIJK) {
+    if (boastar_algorithm_options->algorithm == CN_SP_ST_DIJK) {
         h.reset(new ZeroHeuristic());
     } else {
-        switch (options.metrictype) {
+        switch (boastar_algorithm_options->metrictype) {
         case CN_SP_MT_CHEB:
-            h.reset(new ChebishevHeuristic(map.getGoalNode(), options.hweight));
+            h.reset(new ChebishevHeuristic(map.getGoalNode(), boastar_algorithm_options->hweight));
             break;
         case CN_SP_MT_DIAG:
-            h.reset(new OctileHeuristic(map.getGoalNode(), options.hweight));
+            h.reset(new OctileHeuristic(map.getGoalNode(), boastar_algorithm_options->hweight));
             break;
         case CN_SP_MT_EUCL:
-            h.reset(new EuclidianHeuristic(map.getGoalNode(), options.hweight));
+            h.reset(new EuclidianHeuristic(map.getGoalNode(), boastar_algorithm_options->hweight));
             break;
         case CN_SP_MT_MANH:
-            h.reset(new ManhattanEuristic(map.getGoalNode(), options.hweight));
+            h.reset(new ManhattanEuristic(map.getGoalNode(), boastar_algorithm_options->hweight));
             break;
         default:
             break;
