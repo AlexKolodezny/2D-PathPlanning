@@ -11,6 +11,8 @@ set(HEADERS         config.h
                     section.h
                     search.h
                     solution.h
+                    heuristic.h
+                    astar.h
                     boastar.h
                     genetic.h
                     searchresult.h
@@ -20,10 +22,12 @@ set(HEADERS         config.h
 set(SOURCES         config.cpp
                     environmentoptions.cpp
                     map.cpp
+                    node.cpp
                     genetic.cpp
                     mission.cpp
                     section.cpp
                     boastar.cpp
+                    astar.cpp
                     tinyxml2.cpp
                     xmllogger.cpp)
 

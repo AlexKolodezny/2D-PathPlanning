@@ -1,115 +1,72 @@
-#include "boastar.h"
+#include "astar.h"
 #include <chrono>
 #include <memory>
 #include <iterator>
 #include <map>
 #include <unordered_map>
-#include "search.h"
-#include "section.h"
 #include "node.h"
-#include <cmath>
-#include <queue>
 #include "heuristic.h"
 
-BOAstarSearch::BOAstarSearch(std::unique_ptr<DangerObjective>&& obj): obj(std::move(obj)) {}
+AstarSearch::AstarSearch()
+{
+//set defaults here
+}
 
-BOAstarSearch::~BOAstarSearch() {}
+AstarSearch::~AstarSearch() {}
 
-
-class OpenContainerHeapCompare {
+class AstarOpenContainerTreeCompare {
 public:
-    bool operator()(std::pair<std::pair<double, double>, Node> x, std::pair<std::pair<double, double>, Node> y) {
-        return x.first > y.first;
+    bool operator()(std::pair<double, double> x, std::pair<double, double> y) const {
+        if (x.first == y.first) {
+            return x.second > y.second;
+        }
+        return x.first < y.first;
     }
 };
 
-class OpenContainer {
-    std::priority_queue<
-        std::pair<std::pair<double, double>, Node>,
-        std::vector<std::pair<std::pair<double, double>, Node>>,
-        OpenContainerHeapCompare> heap;
+class AstarOpenContainer {
+    std::multimap<std::pair<double, double>, Node, AstarOpenContainerTreeCompare> tree;
+    std::unordered_map<Cell, decltype(tree)::const_iterator, HashCoordinate> table;
 public:
-    OpenContainer(): heap() {}
+    AstarOpenContainer(HashCoordinate hash): tree(), table(10, hash) {}
 
     bool empty() const {
-        return heap.empty();
+        return tree.empty();
     }
 
     size_t size() const {
-        return heap.size();
+        return tree.size();
     }
 
     Node extract_min() {
-        Node res = heap.top().second;
-        heap.pop();
+        Node res = tree.begin()->second;
+        tree.erase(tree.begin());
+        table.erase(res);
         return res;
     }
 
-    void insert_node(Node node) {
-        heap.push({{node.f1, node.f2}, node});
-        return;
-    }
-};
-
-class CloseContainer {
-    std::list<Node> container;
-    std::unordered_map<Cell, double, HashCoordinate> g_min;
-    std::unordered_map<Cell, double, HashCoordinate> g_max;
-public:
-    CloseContainer(HashCoordinate hash): container{}, g_min{10, hash}, g_max{10, hash} {}
-
-    size_t size() const {
-        return container.size();
+    bool has_node(Node node) const {
+        return table.find(node) != table.end();
     }
 
-    bool empty() const {
-        return container.empty();
-    }
-
-    bool is_non_dominated(Node node) const {
-        if (g_min.find(node) == g_min.end()) {
-            return true;
+    void update_node(Node node) {
+        auto it = table.find(node);
+        if (it != table.end()) {                
+            if (it->second->second.f1 <= node.f1) {
+                return;
+            }
+            tree.erase(it->second);
+            table.erase(it);
         }
-        return node.g2 < g_min.at(node) && node.g1 > g_max.at(node);
-    }
-
-    Node* insert(Node node) {
-        container.push_back(node);
-        g_min[node] = node.g2;
-        g_max[node] = node.g1;
-        return &container.back();
-    }
-};
-
-class Solves {
-    std::vector<Node*> container;
-    double g_min;
-    double g_max;
-public:
-    Solves(): container{}, g_min{}, g_max{} {}
-
-    bool is_non_dominated(Node node) const {
-        return container.empty() || (node.f2 < g_min && node.f1 > g_max);
-    }
-
-    void insert_node(Node *node) {
-        g_min = node->g2;
-        g_max = node->g1;
-        container.push_back(node);
-        return;
-    }
-
-    const std::vector<Node*>& path_ends() {
-        return container;
+        table[node] = tree.insert({{node.f1, node.g1}, node});
     }
 };
 
 //give access to the nodes which we must update from the current node
-class Expansion {
+class AstarExpansion {
     const Map& map;
     const EnvironmentOptions& op;
     const Heuristic& h;
-    const DangerObjective& obj;
     const Cell diff[10]{
         {1, -1},
         {1, 0},
@@ -124,7 +81,7 @@ class Expansion {
     };
     const double dl[10]{sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1.};
 public:
-    Expansion(const Map& m, const EnvironmentOptions& op, const Heuristic& h, const DangerObjective& obj): map(m), op(op), h(h), obj(obj) {}
+    AstarExpansion(const Map& m, const EnvironmentOptions& op, const Heuristic& h): map(m), op(op), h(h) {}
 
     size_t size() const {
         return 8;
@@ -154,20 +111,21 @@ public:
             cur + diff[k],
             h(cur + diff[k]), 
             cur.g1 + dl[k], 
-            cur.g2 + obj(map.getCellDanger(cur + diff[k])),
+            0,
             &cur};
         return nxt;
     }
 };
 
-SearchResult BOAstarSearch::startSearch(ILogger *, const Map &map, const EnvironmentOptions &options)
+SearchResult AstarSearch::startSearch(ILogger *, const Map &map, const EnvironmentOptions &options)
 {
-
     auto start_time = std::chrono::steady_clock::now();
 
-    OpenContainer open{};
-    CloseContainer close{HashCoordinate{map.getMapHeight()}};
-    Solves solves{};
+    AstarOpenContainer open{HashCoordinate{map.getMapHeight()}};
+    std::unordered_map<Cell, Node, HashCoordinate> close{
+        10, 
+        HashCoordinate{map.getMapHeight()}
+    };
 
     BOAstarAlgorithmOptions *boastar_algorithm_options = dynamic_cast<BOAstarAlgorithmOptions*>(options.algorithm_options.get());
 
@@ -192,14 +150,10 @@ SearchResult BOAstarSearch::startSearch(ILogger *, const Map &map, const Environ
             break;
         }
     }
-    Expansion expansion{map, options, *h, *obj};
+    AstarExpansion expansion{map, options, *h};
 
-    open.insert_node({
-        map.getStartNode(),
-        h->operator()(map.getStartNode()), 
-        0,
-        0,
-        nullptr});
+    Node* end = nullptr;
+    open.update_node({map.getStartNode(), h->operator()(map.getStartNode()), 0, 0, nullptr});
 
     int countNumberOfSteps = 0;
 
@@ -208,28 +162,27 @@ SearchResult BOAstarSearch::startSearch(ILogger *, const Map &map, const Environ
 
         auto node = open.extract_min();
 
-        if (!close.is_non_dominated(node) || !solves.is_non_dominated(node)) {
-            continue;
-        }
-
-        auto ptr = close.insert(node);
-        if (*ptr == map.getGoalNode()) {
-            solves.insert_node(ptr);
+        auto it = close.insert({node, node}).first;
+        if (it->first == map.getGoalNode()) {
+            end = &it->second;
+            break;
         }
 
         for (size_t k = 0; k < expansion.size(); ++k) {
-            auto nxt = expansion.get(*ptr, k);
+            auto nxt = expansion.get(it->second, k);
             if (!nxt.parent) {
                 continue;
             }
-            if (!close.is_non_dominated(nxt) || !solves.is_non_dominated(nxt)) {
+
+            if (close.find(nxt) != close.end()) {
                 continue;
             }
-            open.insert_node(nxt);
+
+            open.update_node(nxt);
         }
     }
 
-    for (auto end : solves.path_ends()) {
+    if (end != nullptr) {
         auto res = make_primary_path(end);
         sresult.paths.push_back({res, make_secondary_path(res), end->g1, end->g2});
     }
@@ -238,7 +191,6 @@ SearchResult BOAstarSearch::startSearch(ILogger *, const Map &map, const Environ
 
     sresult.nodescreated = open.size() + close.size();
     sresult.numberofsteps = countNumberOfSteps;
+
     return sresult;
 }
-
-

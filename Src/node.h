@@ -2,6 +2,7 @@
 #define NODE_H
 
 #include "cell.h"
+#include <list>
 
 //That's the data structure for storing a single search node.
 
@@ -15,5 +16,7 @@ struct Node : public Cell
         : Cell(c), h1(h1), f1(h1 + g1), g1(g1), f2(g2), g2(g2), parent(parent) {}
     Node(): Cell{-1, -1}, h1(-1), f1(-1), g1(-1), f2(-1), g2(-1), parent(nullptr) {}
 };
+
+std::list<Cell> make_primary_path(Node *end);
 
 #endif

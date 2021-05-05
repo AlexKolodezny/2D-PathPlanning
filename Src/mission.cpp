@@ -1,6 +1,7 @@
 #include "mission.h"
 #include "boastar.h"
 #include "genetic.h"
+#include "astar.h"
 #include <iostream>
 #include <memory>
 
@@ -48,9 +49,7 @@ void Mission::createSearch()
 {
     map.setDistanceMap();
     std::unique_ptr<DangerObjective> obj;
-    if (options.algorithm_options->algorithm == CN_SP_ST_ASTAR || options.algorithm_options->algorithm == CN_SP_ST_DIJK) {
-        obj = std::make_unique<ZeroDangerObjective>();
-    } else if (options.dangerobjective == CN_SP_DO_LINEAR) {
+    if (options.dangerobjective == CN_SP_DO_LINEAR) {
         obj = std::make_unique<LinearDangerObjective>(options.dangerlevel);
     } else if (options.dangerobjective == CN_SP_DO_INVERT) {
         obj = std::make_unique<InvertDangerObjective>();
@@ -58,9 +57,11 @@ void Mission::createSearch()
         obj = std::make_unique<ExponentialDangerObjective>();
     }
     if (options.algorithm_options->algorithm == CN_SP_ST_GAMOPP) {
-        search = std::unique_ptr<Search>(new GeneticAlgorithm(map, options, std::move(obj)));
+        search = std::make_unique<GeneticAlgorithm>(map, options, std::move(obj));
+    } else if (options.algorithm_options->algorithm == CN_SP_ST_BOASTAR) {
+        search = std::make_unique<BOAstarSearch>(std::move(obj));
     } else {
-        search = std::unique_ptr<Search>(new BOAstarSearch(std::move(obj)));
+        search = std::make_unique<AstarSearch>();
     }
 }
 
