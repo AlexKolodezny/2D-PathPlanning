@@ -50,6 +50,10 @@ for item in paths.findall("item"):
         pathy.append(int(node.get("x")))
     lppaths.append((np.asarray(pathx), np.asarray(pathy)))
 
+if len(lppaths) == 0:
+    print("Path not found!")
+    sys.exit(0)
+
 paths_danger = np.array(paths_danger)
 paths_length = np.array(paths_length)
 grid = np.asarray(grid)

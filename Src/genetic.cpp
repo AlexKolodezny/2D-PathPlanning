@@ -580,10 +580,12 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
         }
         logger->writeToLogGeneration(grid, sol);
     }
-    
-    for (auto& ind : fronts[0]) {
-        auto res = get_result(ind);
-        sresult.paths.push_back({res, make_secondary_path(res), ind.get_path_length(), ind.get_path_danger()});
+
+    if (!fronts[0][0].is_invalid()) {
+        for (auto& ind : fronts[0]) {
+            auto res = get_result(ind);
+            sresult.paths.push_back({res, make_secondary_path(res), ind.get_path_length(), ind.get_path_danger()});
+        }
     }
 
     sresult.time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0;

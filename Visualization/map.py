@@ -28,22 +28,22 @@ for row in grid_tag.findall("row"):
 grid = np.asarray(grid)
 
 tag = map_tag.find("startx")
-if tag == None:
+if tag == None or tag.text == None:
     print("Error! Tag 'startx' not found")
 else:
     st_x = int(tag.text)
     tag = map_tag.find("starty")
-    if tag == None:
+    if tag == None or tag.text == None:
         print("Error! Tag 'starty' not found")
     else:
         st_y = int(tag.text)
         tag = map_tag.find("finishx")
-        if tag == None:
+        if tag == None or tag.text == None:
             print("Error! Tag 'finishx' not found")
         else:
             fn_x = int(tag.text)
             tag = map_tag.find("finishy")
-            if tag == None:
+            if tag == None or tag.text == None:
                 print("Error! Tag 'finishy' not found")
             else:
                 fn_y = int(tag.text)
