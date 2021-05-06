@@ -51,7 +51,7 @@
     </options>
     <log>
         <mapfilename>Examples/example_astar.xml</mapfilename>
-        <summary numberofpaths="1" numberofsteps="322" nodescreated="348" time="0.000620"/>
+        <summary numberofpaths="1" numberofsteps="322" nodescreated="348" time="0.000668"/>
         <paths>
             <item>
                 <pathsummary length="17.242641" length_scaled="413.82339" danger="0"/>

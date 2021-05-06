@@ -12,8 +12,10 @@
 
 class AstarSearch : public Search
 {
+    Cell start, goal;
+    int min_danger;
     public:
-        AstarSearch();
+        AstarSearch(Cell start, Cell goal, int min_danger);
         ~AstarSearch() override;
         SearchResult startSearch(ILogger *Logger, const Map &Map, const EnvironmentOptions &options) override;
 };

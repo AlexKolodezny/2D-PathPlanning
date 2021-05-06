@@ -10,7 +10,7 @@
 #include <random>
 #include <optional>
 
-struct GeneticNode : Cell {
+struct GeneticNode : public Cell {
 };
 
 class GeneticAlgorithm : public Search
@@ -30,11 +30,14 @@ private:
     void mutation(Individ& ind);
     void remove_cycles(Individ& ind) const;
     bool invalid_refiner(Individ& ind);
+    void astar_length_refiner(Individ& ind);
+    void astar_danger_refiner(Individ& ind);
     std::optional<std::pair<Individ, Individ>> crossover(const Individ& parent1, const Individ& parent2);
     std::list<Cell> get_result(const Individ& ind) const;
 
-    std::list<GeneticNode> line_path(std::pair<int, int> start, std::pair<int, int> end);
-    std::list<GeneticNode> random_path(std::pair<int, int> start, std::pair<int, int> end);
+    std::list<GeneticNode> line_path(Cell start, Cell end);
+    std::list<GeneticNode> random_path(Cell start, Cell end);
+    std::list<GeneticNode> astar_path(Cell start, Cell end, int min_danger);
 
     Individ* choose_parent(std::vector<Individ>& generation);
     std::vector<std::vector<Individ>> nsga_ii(std::vector<Individ>&&);
@@ -72,6 +75,7 @@ public:
         double get_path_danger() const;
         bool is_invalid() const;
         int get_crossed_obstacles() const;
+        bool is_bad(Cell start, Cell end) const;
 
         friend void GeneticAlgorithm::initialize_length_and_danger(Individ& ind) const;
         friend void GeneticAlgorithm::length_refiner(Individ& ind);
@@ -79,6 +83,8 @@ public:
         friend void GeneticAlgorithm::mutation(Individ& ind);
         friend void GeneticAlgorithm::remove_cycles(Individ& ind) const;
         friend bool GeneticAlgorithm::invalid_refiner(Individ& ind);
+        friend void GeneticAlgorithm::astar_length_refiner(Individ& ind);
+        friend void GeneticAlgorithm::astar_danger_refiner(Individ& ind);
         friend std::optional<std::pair<Individ, Individ>> GeneticAlgorithm::crossover(const Individ&, const Individ&);
         friend std::list<Cell> GeneticAlgorithm::get_result(const Individ& ind) const;
     };

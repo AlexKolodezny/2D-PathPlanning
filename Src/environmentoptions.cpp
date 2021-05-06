@@ -11,14 +11,16 @@ EnvironmentOptions::EnvironmentOptions():
     allowsqueeze{false},
     dangerobjective{CN_SP_DO_EXP},
     dangerlevel{0},
+    hppath{true},
     algorithm_options{std::make_unique<BOAstarAlgorithmOptions>()} {}
 
-EnvironmentOptions::EnvironmentOptions(bool AD, bool CC, bool AS, int DO,int DL):
+EnvironmentOptions::EnvironmentOptions(bool AD, bool CC, bool AS, int DO,int DL, bool HP):
     allowdiagonal{AD},
     cutcorners{CC},
     allowsqueeze{AS},
     dangerobjective{DO},
     dangerlevel{DL},
+    hppath{HP},
     algorithm_options{} {}
 
 bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)

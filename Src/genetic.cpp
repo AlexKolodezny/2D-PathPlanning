@@ -10,6 +10,7 @@
 #include "cell.h"
 #include "section.h"
 #include <chrono>
+#include "astar.h"
 
 Cell diff[4] = {
     {1, 0},
@@ -109,6 +110,23 @@ std::list<GeneticNode> GeneticAlgorithm::random_path(Cell start, Cell end) {
     std::list<GeneticNode> res;
     res.splice(res.end(), line_path(start, pass));
     res.splice(res.end(), line_path(pass, end));
+    return res;
+}
+
+std::list<GeneticNode> GeneticAlgorithm::astar_path(Cell start, Cell end, int min_danger) {
+    AstarSearch search{start, end, min_danger};
+    EnvironmentOptions opt{false, false, false};
+    opt.algorithm_options.reset(new BOAstarAlgorithmOptions(CN_SP_ST_ASTAR, CN_SP_MT_MANH));
+    opt.hppath = false;
+    auto sresult = search.startSearch(NULL, grid, opt);
+    if (sresult.paths.empty()) {
+        return {};
+    }
+    std::list<GeneticNode> res;
+    for (auto x : sresult.paths[0].lppath) {
+        res.push_back(GeneticNode{x});
+    }
+    res.pop_back();
     return res;
 }
 
@@ -376,6 +394,57 @@ void GeneticAlgorithm::danger_refiner(Individ& ind) {
     return;
 }
 
+void GeneticAlgorithm::astar_length_refiner(Individ& ind) {
+    std::uniform_int_distribution<size_t> d{0, ind.path.size() - 1};
+    size_t st = d(random_generator);
+    size_t fn = d(random_generator);
+    if (fn == st) {
+        return;
+    }
+
+    if (fn < st) {
+        std::swap(st, fn);
+    }
+
+    auto start_erase = std::next(ind.path.begin(), st);
+    auto end_erase = std::next(start_erase, fn - st);
+
+    Cell start = *start_erase;
+    auto res = astar_path(start, *end_erase, 1);
+    if (res.empty()) {
+        return;
+    }
+    ind.path.erase(start_erase, end_erase);
+    ind.path.splice(end_erase, std::move(res));
+}
+
+void GeneticAlgorithm::astar_danger_refiner(Individ& ind) {
+    std::uniform_int_distribution<size_t> d{0, ind.path.size() - 1};
+    size_t st = d(random_generator);
+    size_t fn = d(random_generator);
+    if (fn == st) {
+        return;
+    }
+
+    if (fn < st) {
+        std::swap(st, fn);
+    }
+
+    auto start_erase = std::next(ind.path.begin(), st);
+    auto end_erase = std::next(start_erase, fn - st);
+
+    int k = std::min(grid.getCellDanger(*start_erase), grid.getCellDanger(*end_erase));
+
+    Cell start = *start_erase;
+    auto res = astar_path(start, *end_erase, k);
+    if (res.empty()) {
+        return;
+    }
+    ind.path.erase(start_erase, end_erase);
+    ind.path.splice(end_erase, std::move(res));
+
+}
+
 double GeneticAlgorithm::Individ::get_path_length() const {
     return length;
 }
@@ -390,6 +459,24 @@ bool GeneticAlgorithm::Individ::is_invalid() const {
 
 int GeneticAlgorithm::Individ::get_crossed_obstacles() const {
     return cross_obstacles;
+}
+
+bool GeneticAlgorithm::Individ::is_bad(Cell start, Cell end) const {
+    if (path.empty()) {
+        return true;
+    }
+    if (start != *path.begin()) {
+        return true;
+    }
+    if (end != *std::prev(path.end())) {
+        return true;
+    }
+    for (auto it = path.begin(); std::next(it) != path.end(); ++it) {
+        if (std::abs(it->first - std::next(it)->first) + std::abs(it->second - std::next(it)->second) != 1) {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::list<Cell> GeneticAlgorithm::get_result(const Individ& ind) const {
@@ -489,8 +576,8 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
     size_t k = 10;
 
     double p_mutaion = 0.5;
-    double p_length_refine = 0.5;
-    double p_danger_refine = 0.5;
+    double p_length_refine = 0.1;
+    double p_danger_refine = 0.1;
 
 
     std::vector<Individ> generation;
@@ -503,7 +590,22 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
     }
 
     for (auto& x : generation) {
+        invalid_refiner(x);
+    }
+
+    for (auto& x : generation) {
         initialize_length_and_danger(x);
+        if (x.is_bad(grid.getStartNode(), grid.getGoalNode())) {
+            std::cerr << "Incorrect path!" << std::endl;
+        }
+    }
+
+    if (generation[0].is_invalid()) {
+        sresult.time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0;
+
+        sresult.nodescreated = 0;
+        sresult.numberofsteps = 0;
+        return sresult;
     }
 
     for (size_t epoch = 0; epoch < epoch_number; ++epoch) {
@@ -533,9 +635,11 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
                 }
                 if (at_random(p)) {
                     mutation(couple.value().first);
+                    invalid_refiner(couple.value().first);
                 }
                 if (at_random(p)) {
                     mutation(couple.value().second);
+                    invalid_refiner(couple.value().second);
                 }
                 childs.push_back(std::move(couple.value().first));
                 childs.push_back(std::move(couple.value().second));
@@ -544,15 +648,10 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
         }
         for (auto& c : childs) {
             if (at_random(p_length_refine)) {
-                length_refiner(c);
+                astar_length_refiner(c);
             }
             if (at_random(p_danger_refine)) {
-                danger_refiner(c);
-            }
-        }
-        if (epoch * 4 >= epoch_number) {
-            for (auto& c : childs) {
-                invalid_refiner(c);
+                astar_danger_refiner(c);
             }
         }
         for (auto& c : childs) {
@@ -561,14 +660,18 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
         for (auto& c : childs) {
             initialize_length_and_danger(c);
         }
-        // std::move(childs.begin(), childs.end(), std::back_inserter(generation));
-        //generation = std::move(childs);
-        //nsga_ii(generation);
-        //generation.erase(generation.begin() + generation_size, generation.end());
 
         generation.erase(generation.begin() + parent_remains, generation.end());
-        std::move(childs.begin(), childs.end(), std::back_inserter(generation));
+        for (auto& x : childs) {
+            if (!x.is_bad(grid.getStartNode(), grid.getGoalNode())) {
+                generation.push_back(std::move(x));
+            } else {
+                std::cerr << "Incorrect path!" << std::endl;
+            }
+            // generation.push_back(std::move(x));
+        }
     }
+
 
     auto fronts = nsga_ii(std::move(generation));
     {
@@ -580,6 +683,7 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
         }
         logger->writeToLogGeneration(grid, sol);
     }
+
 
     if (!fronts[0][0].is_invalid()) {
         for (auto& ind : fronts[0]) {

@@ -61,7 +61,7 @@ void Mission::createSearch()
     } else if (options.algorithm_options->algorithm == CN_SP_ST_BOASTAR) {
         search = std::make_unique<BOAstarSearch>(std::move(obj));
     } else {
-        search = std::make_unique<AstarSearch>();
+        search = std::make_unique<AstarSearch>(map.getStartNode(), map.getGoalNode(), 1);
     }
 }
 

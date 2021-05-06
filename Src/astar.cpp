@@ -7,10 +7,10 @@
 #include "node.h"
 #include "heuristic.h"
 
-AstarSearch::AstarSearch()
-{
-//set defaults here
-}
+AstarSearch::AstarSearch(Cell start, Cell goal, int min_danger):
+    start{start},
+    goal{goal},
+    min_danger{min_danger} {}
 
 AstarSearch::~AstarSearch() {}
 
@@ -67,6 +67,7 @@ class AstarExpansion {
     const Map& map;
     const EnvironmentOptions& op;
     const Heuristic& h;
+    int min_danger;
     const Cell diff[10]{
         {1, -1},
         {1, 0},
@@ -81,7 +82,7 @@ class AstarExpansion {
     };
     const double dl[10]{sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1., sqrt(2.), 1.};
 public:
-    AstarExpansion(const Map& m, const EnvironmentOptions& op, const Heuristic& h): map(m), op(op), h(h) {}
+    AstarExpansion(const Map& m, const EnvironmentOptions& op, const Heuristic& h, int min_danger): map(m), op(op), h(h), min_danger{min_danger} {}
 
     size_t size() const {
         return 8;
@@ -91,7 +92,7 @@ public:
     //if k-th node is unreachable, returns node with parent == nullptr
     Node get(Node& cur, int k) const {
         ++k;
-        if (!map.CellOnGrid(cur + diff[k]) || map.CellIsObstacle(cur + diff[k])) {
+        if (!map.CellOnGrid(cur + diff[k]) || map.CellIsObstacle(cur + diff[k]) || map.getCellDanger(cur + diff[k]) < min_danger) {
             return {};
         }
         if (k % 2 == 0) {
@@ -135,25 +136,25 @@ SearchResult AstarSearch::startSearch(ILogger *, const Map &map, const Environme
     } else {
         switch (boastar_algorithm_options->metrictype) {
         case CN_SP_MT_CHEB:
-            h.reset(new ChebishevHeuristic(map.getGoalNode(), boastar_algorithm_options->hweight));
+            h.reset(new ChebishevHeuristic(goal, boastar_algorithm_options->hweight));
             break;
         case CN_SP_MT_DIAG:
-            h.reset(new OctileHeuristic(map.getGoalNode(), boastar_algorithm_options->hweight));
+            h.reset(new OctileHeuristic(goal, boastar_algorithm_options->hweight));
             break;
         case CN_SP_MT_EUCL:
-            h.reset(new EuclidianHeuristic(map.getGoalNode(), boastar_algorithm_options->hweight));
+            h.reset(new EuclidianHeuristic(goal, boastar_algorithm_options->hweight));
             break;
         case CN_SP_MT_MANH:
-            h.reset(new ManhattanEuristic(map.getGoalNode(), boastar_algorithm_options->hweight));
+            h.reset(new ManhattanEuristic(goal, boastar_algorithm_options->hweight));
             break;
         default:
             break;
         }
     }
-    AstarExpansion expansion{map, options, *h};
+    AstarExpansion expansion{map, options, *h, min_danger};
 
     Node* end = nullptr;
-    open.update_node({map.getStartNode(), h->operator()(map.getStartNode()), 0, 0, nullptr});
+    open.update_node({start, h->operator()(start), 0, 0, nullptr});
 
     int countNumberOfSteps = 0;
 
@@ -163,7 +164,7 @@ SearchResult AstarSearch::startSearch(ILogger *, const Map &map, const Environme
         auto node = open.extract_min();
 
         auto it = close.insert({node, node}).first;
-        if (it->first == map.getGoalNode()) {
+        if (it->first == goal) {
             end = &it->second;
             break;
         }
@@ -184,7 +185,11 @@ SearchResult AstarSearch::startSearch(ILogger *, const Map &map, const Environme
 
     if (end != nullptr) {
         auto res = make_primary_path(end);
-        sresult.paths.push_back({res, make_secondary_path(res), end->g1, end->g2});
+        if (options.hppath) {
+            sresult.paths.push_back({res, make_secondary_path(res), end->g1, end->g2});
+        } else {
+            sresult.paths.push_back({res, {}, end->g1, end->g2});
+        }
     }
 
     sresult.time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0;
