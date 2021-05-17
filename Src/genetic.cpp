@@ -571,13 +571,14 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
     size_t epoch_number = genetic_algorithm_options->epoch_number;
     size_t child_number = genetic_algorithm_options->child_create;
     size_t parent_remains = genetic_algorithm_options->parents_remain;
+    double worktime = genetic_algorithm_options->time;
     size_t generation_size = child_number + parent_remains;
 
     size_t k = 10;
 
     double p_mutaion = 0.5;
-    double p_length_refine = 0.1;
-    double p_danger_refine = 0.1;
+    double p_length_refine = 0.3;
+    double p_danger_refine = 0.3;
 
 
     std::vector<Individ> generation;
@@ -609,6 +610,12 @@ SearchResult GeneticAlgorithm::startSearch(ILogger * logger, const Map &, const 
     }
 
     for (size_t epoch = 0; epoch < epoch_number; ++epoch) {
+        if (worktime > 0) {
+            double cur_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0;
+            if (cur_time > worktime) {
+                break;
+            }
+        }
         auto fronts = nsga_ii(std::move(generation));
         generation.clear();
 

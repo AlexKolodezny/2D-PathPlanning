@@ -160,7 +160,7 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
         element = algorithm->FirstChildElement(CNS_TAG_GT_EN);
         if (!element) {
             std::cout << "Warning! No '" << CNS_TAG_GT_EN << "' tag found in algorithm section." << std::endl;
-            std::cout << "Value of '" << CNS_TAG_GT_EN << "' was defined to 50" << std::endl;
+            std::cout << "Value of '" << CNS_TAG_GT_EN << "' was defined to 35" << std::endl;
             genetic_algorithm_options->epoch_number = 50;
         } else {
             stream << element->GetText();
@@ -171,7 +171,7 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
             if (genetic_algorithm_options->epoch_number < 0) {
                 std::cout << "Warning! Value of '" << CNS_TAG_GT_EN << "' tag is not correctly specified. Should be >= 0."
                         << std::endl;
-                std::cout << "Value of '" << CNS_TAG_GT_EN << "' was defined to 50." << std::endl;
+                std::cout << "Value of '" << CNS_TAG_GT_EN << "' was defined to 35." << std::endl;
                 genetic_algorithm_options->epoch_number = 50;
             }
         }
@@ -179,8 +179,8 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
         element = algorithm->FirstChildElement(CNS_TAG_GT_PR);
         if (!element) {
             std::cout << "Warning! No '" << CNS_TAG_GT_PR << "' tag found in algorithm section." << std::endl;
-            std::cout << "Value of '" << CNS_TAG_GT_PR << "' was defined to 25" << std::endl;
-            genetic_algorithm_options->parents_remain = 25;
+            std::cout << "Value of '" << CNS_TAG_GT_PR << "' was defined to 15" << std::endl;
+            genetic_algorithm_options->parents_remain = 15;
         } else {
             stream << element->GetText();
             stream >> genetic_algorithm_options->parents_remain;
@@ -190,16 +190,16 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
             if (genetic_algorithm_options->parents_remain < 0) {
                 std::cout << "Warning! Value of '" << CNS_TAG_GT_PR << "' tag is not correctly specified. Should be >= 0."
                         << std::endl;
-                std::cout << "Value of '" << CNS_TAG_GT_PR << "' was defined to 25." << std::endl;
-                genetic_algorithm_options->parents_remain = 25;
+                std::cout << "Value of '" << CNS_TAG_GT_PR << "' was defined to 15." << std::endl;
+                genetic_algorithm_options->parents_remain = 15;
             }
         }
 
         element = algorithm->FirstChildElement(CNS_TAG_GT_CC);
         if (!element) {
             std::cout << "Warning! No '" << CNS_TAG_GT_CC << "' tag found in algorithm section." << std::endl;
-            std::cout << "Value of '" << CNS_TAG_GT_CC << "' was defined to 25" << std::endl;
-            genetic_algorithm_options->child_create = 25;
+            std::cout << "Value of '" << CNS_TAG_GT_CC << "' was defined to 15" << std::endl;
+            genetic_algorithm_options->child_create = 15;
         } else {
             stream << element->GetText();
             stream >> genetic_algorithm_options->child_create;
@@ -209,10 +209,23 @@ bool EnvironmentOptions::setEnvironmentOptions(const char *FileName)
             if (genetic_algorithm_options->child_create < 0) {
                 std::cout << "Warning! Value of '" << CNS_TAG_GT_CC << "' tag is not correctly specified. Should be >= 0."
                         << std::endl;
-                std::cout << "Value of '" << CNS_TAG_GT_CC << "' was defined to 25." << std::endl;
-                genetic_algorithm_options->child_create = 25;
+                std::cout << "Value of '" << CNS_TAG_GT_CC << "' was defined to 15." << std::endl;
+                genetic_algorithm_options->child_create = 15;
             }
         }
+
+        element = algorithm->FirstChildElement(CNS_TAG_GT_TM);
+        if (!element) {
+            std::cout << "Warning! No '" << CNS_TAG_GT_TM << "' tag found in algorithm section." << std::endl;
+            std::cout << "Value of '" << CNS_TAG_GT_TM << "' was defined to -1" << std::endl;
+            genetic_algorithm_options->time = -1;
+        } else {
+            stream << element->GetText();
+            stream >> genetic_algorithm_options->time;
+            stream.str("");
+            stream.clear();
+        }
+        
     }
     
 

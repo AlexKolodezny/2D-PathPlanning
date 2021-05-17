@@ -26,11 +26,13 @@ public:
     int epoch_number;
     int parents_remain;
     int child_create;
-    GeneticAlgorithmOptions(int EN = 50, int PR = 25, int CC = 25): 
+    double time;
+    GeneticAlgorithmOptions(int EN = 50, int PR = 25, int CC = 25, double TM = -1): 
         AlgorithmOptions{CN_SP_ST_GAMOPP}, 
         epoch_number{EN}, 
         parents_remain{PR}, 
-        child_create{CC} {}
+        child_create{CC},
+        time{TM} {}
     ~GeneticAlgorithmOptions() override {}
 };
 

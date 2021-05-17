@@ -30,6 +30,7 @@
         #define CNS_TAG_GT_CC       "childrencreate"
         #define CNS_TAG_GT_PR       "parentsremain"
         #define CNS_TAG_GT_EN       "epochnumber"
+        #define CNS_TAG_GT_TM       "worktime"
 
     #define CNS_TAG_OPT             "options"
         #define CNS_TAG_LOGLVL      "loglevel"
